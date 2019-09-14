@@ -1,14 +1,16 @@
 # Baws "Monolith" CDK - Beta
-Use CDK command line to build and manage complete infrastructure needed to containerize and modernize your monolith applications into  such as WordPress, Drupal, Flask, Django, any static site generator with Docker and CodePipelines
+Use CDK command line to build and manage complete infrastructure needed to containerize and modernize your monolith applications such as WordPress, Drupal, Flask, Django, any static site generator with Docker and CodePipelines
 
 This is currently an alpha build. More documentation and features arriving by October, 2019.
 
----
 
 ## Getting Started
+---
 
 ### **Important Note:**
-Although usage of this code is free, following instructions here will result in billable services in your AWS account. **You are responsbile for your AWS bill.**
+Although usage of this code is free, following instructions here will result in billable services in your AWS account. 
+
+**You are responsbile for your AWS bill.**
 
 ## Prerequisites:
 
@@ -42,3 +44,55 @@ Config.yml can be used to configure and update your infrastructure. Every variab
 All `name` options must be unique per array.
 
 Most options are commented or self-explanatory. Additional documentation will be arriving by October, 2019.
+
+## Usage
+---
+After setup, run the following command:
+
+```bash
+cdk bootstrap
+```
+After the bootstrap command is run, you have the option of 3 different stacks:
+
+## Creating your Stacks
+
+```bash
+cdk deploy stack-full
+```
+The above will launch all standard features, and launch an Aurora Cluster, and a Cache Cluster.
+
+```bash
+cdk deploy stack-standard
+```
+The above will launch all standard features for a CRUD application. It is missing elasticache when compared to `stack-full`.
+
+```bash
+cdk deploy stack-min
+```
+The above will not launch an Aurora (MySQL) cluster, or a cache cluster, compared to `stack-full` and `stack-standard`, respectively.  
+
+## Destroying your Stacks
+
+Each stack you create above is compiled from a serires of separate stacks. This is by design, in order to be able to destroy a service, for instance, without destroying its corresponding repo. 
+
+To view all stacks created by the services visit the [CloudFormation Service](https://console.aws.amazon.com/cloudformation/home?#/stacks?filteringText=&filteringStatus=active&viewNested=true&hideStacks=false) in your console. 
+
+Destroying a stack will also destroy all service dependent on that stack. For instance, nearly every service is dependent on the `vpc` stack. To destroy everything created by the above deploy commands, run:
+
+```bash
+cdk destroy vpc
+```
+**PLEASE NOTE:** After populating storage and services with content, not every stack will destroy successfully. For instance, non-empty S3 buckets cannot be destroyed through command line; the destroy command will fail. 
+
+To destroy any stacks which fail to delete, you may have to take manual action, such as deleting the desired S3 buckets through the console, first. 
+
+## Road Map
+---
+The following features have the highest priority in future implementation:
+
+* **Blue/Green Deployments in the pipeline.**
+* **Github support in pipelines.**
+* **"Files" support**, so configurations can reference directories, which contain a series of files for additional deployments. For instance, a services directory would contain yml files of individual services, to reduce the complexity of any single file. 
+
+
+
