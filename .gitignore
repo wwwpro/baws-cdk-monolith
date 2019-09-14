@@ -1,0 +1,14 @@
+*.js
+*.d.ts
+node_modules
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+cdk.context.json
+
+# Copy .cdk.json into the cdk.json file (without the preceding dot), which 
+# which will override the settings from the dot file.
+cdk.json
+# Ignore configurations created.
+config.yml

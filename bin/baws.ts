@@ -1,0 +1,289 @@
+#!/usr/bin/env node
+import "source-map-support/register";
+import { App } from "@aws-cdk/core";
+import { BawsVPC } from "../lib/vpc/cnfvpc";
+import { BawsRouteResource } from '../lib/vpc/routeResource';
+import { BawsScaling } from "../lib/servers/auto-scaling";
+import { BawsCluster } from "../lib/ecs/cluster";
+import { BawsECR } from "../lib/ecs/repos";
+import { BawsEFS } from "../lib/storage/efs";
+import { BawsTasks } from "../lib/ecs/tasks";
+import { BawsALB } from "../lib/servers/alb";
+import { BawsSecurity } from "../lib/security/security-groups";
+import { BawsTarget } from "../lib/servers/target-group";
+import { BawsTemplate } from "../lib/servers/launch-template";
+import { BawsCommit } from "../lib/codepipeline/commit";
+import { BawsRoles } from "../lib/security/roles";
+import { BawsPipelines } from "../lib/codepipeline/pipelines";
+import { BawsRDS } from "../lib/database/aurora";
+import { BawsServices } from "../lib/ecs/services";
+import { BawsCache } from "../lib/cache/cache";
+import { BawsCDN } from "../lib/cdn/cdn";
+import { BawsS3 } from "../lib/storage/s3";
+import { BawsNotifyFunction }  from '../lib/lambda/notifications';
+import { BawsEvents } from "../lib/cloudwatch/events";
+import { BawsEventTrigger } from "../lib/lambda/ruleTrigger";
+
+import * as yaml from "js-yaml";
+import * as fs from "fs";
+import * as path from "path";
+
+
+let config: any;
+const app = new App();
+
+// Get our default region and account.
+// Alter this on the command line by setting up and using "profiles".
+// For instance `cdk deploy stack-full --profile client1`
+
+const defaultEnv = {
+  account: process.env.CDK_DEFAULT_ACCOUNT,
+  region: process.env.CDK_DEFAULT_REGION
+};
+
+// Load our configuration file.
+try {
+  const filename = path.join(__dirname, "../config.yml");
+  config = yaml.safeLoad(fs.readFileSync(filename, "utf8"));
+} catch (error) {
+  console.log(`Error loading cofig file ${error}. Copy config.sample.yml as config.yml and adjust settings to get started.`);
+}
+
+// The foundation. We always need this.
+const vpc = new BawsVPC(app, "vpc", { env: defaultEnv });
+
+// We currently have a no way to access the main route table through CloudFormation, so we 
+// need this custom resource.
+const routeResource = new BawsRouteResource(app, 'route-resource', {
+  env: defaultEnv,
+  vpcId: vpc.vpcId
+});
+routeResource.addDependency(vpc);
+
+// Security creates groups for everything else we create.
+// If more groups are needed, add them here.
+const security = new BawsSecurity(app, "security", {
+  env: defaultEnv,
+  vpcId: vpc.vpcId
+});
+security.addDependency(routeResource);
+
+// Roles which can rely on AWS managed roles are added here. 
+// Other roles which rely on service Arns are added in their respective stacks.
+const roles = new BawsRoles(app, "roles", {
+  env: defaultEnv
+});
+
+// Artifacts, asset and logging buckets.
+// Every service which relies on a bucket for assets, logs or artifacts are created here.
+const s3 = new BawsS3(app, "s3", {
+  env: defaultEnv,
+  config: config.s3.buckets
+});
+
+// EFS. This is optional, but recommended. Remove efsId from `launchTemplate` if removed.
+const efs = new BawsEFS(app, "efs", {
+  env: defaultEnv,
+  vpcId: vpc.vpcId,
+  publicSubnets: vpc.publicSubnets,
+  securityGroup: security.ec2,
+  encrypted: config.efs.encrypted,
+  name: config.efs.name
+});
+efs.addDependency(vpc);
+efs.addDependency(security);
+
+// Create our ECS cluster, so our launch template knows where its instances belong.
+const cluster = new BawsCluster(app, "cluster", {
+  env: defaultEnv,
+  clusterName: config.ecs.clusterName
+});
+
+// The autoscaling group will use this template to deploy instances.
+// If any updates are made to the launch template, be sure to update
+// the `scaling` stack as well.
+const launchTemplate = new BawsTemplate(app, "launch-template", {
+  env: defaultEnv,
+  securityGroup: security.ec2,
+  instanceRole: roles.ec2InstanceRef,
+  vpcId: vpc.vpcId,
+  efsId: efs.efsId,
+  clusterName: cluster.clusterName,
+  config: config.launchTemplates
+});
+launchTemplate.addDependency(cluster);
+launchTemplate.addDependency(security);
+launchTemplate.addDependency(efs);
+
+// The load balancer. A base target group is created in this process.
+// Additional target groups are created for each service, under `services`
+const alb = new BawsALB(app, "alb", {
+  env: defaultEnv,
+  vpcId: vpc.vpcId,
+  publicSubnets: vpc.publicSubnets,
+  securityGroup: security.alb,
+  albName: config.alb.name
+});
+alb.addDependency(routeResource);
+
+// Our autoscaling group for cluster instances. 
+// Adjust settings in config.yml.
+const scaling = new BawsScaling(app, "scaling", {
+  env: defaultEnv,
+  vpcId: vpc.vpcId,
+  maxSize: config.scaling.maxSize,
+  minSize: config.scaling.minSize,
+  publicSubnets: vpc.publicSubnets,
+  launchTemplateId: launchTemplate.templateId,
+  launchTemplateVersion: launchTemplate.latestVersion,
+  baseTarget: alb.target
+});
+scaling.addDependency(alb);
+scaling.addDependency(launchTemplate);
+
+// Each one of our pipelines needs a repo, created here.
+// Github support is on the roadmap.
+const commit = new BawsCommit(app, "commit", {
+  env: defaultEnv,
+  config: config.codeCommitRepos
+});
+
+// const ecr = new BawsECR(app, "ecr", { env: defaultEnv });
+
+// Creates an aurora cluster to be configured in config.yml.
+// Part of the `stack-full` and `stack-standard`
+const rds = new BawsRDS(app, "rds", {
+  env: defaultEnv,
+  config: config.rds,
+  publicSubnets: vpc.publicSubnets,
+  securityGroup: security.rds
+});
+rds.addDependency(vpc);
+rds.addDependency(security);
+
+// Creates either a redis or memcached cluster, according to 
+// config.yml. Only part of the `stack-full` stack.
+const cache = new BawsCache(app, "cache", {
+  env: defaultEnv,
+  config: config.cache.clusters,
+  securityGroup: security.cache,
+  publicSubnets: vpc.publicSubnets
+});
+cache.addDependency(vpc);
+cache.addDependency(security);
+
+// Creates tasks which are used by services.
+// Each service needs a task. 
+const tasks = new BawsTasks(app, "tasks", {
+  env: defaultEnv,
+  config: config.ecs.tasks,
+  executionRole: roles.ecsExecution,
+  taskRole: roles.ecsTask
+});
+tasks.addDependency(roles);
+
+// Effectively the "app" which gets deployed to the servers
+// created in by the scaling stack.
+const services = new BawsServices(app, "services", {
+  env: defaultEnv,
+  config: config.ecs.services,
+  tasks: tasks.taskMap,
+  listenerArn: alb.listener.ref,
+  albName: alb.albName,
+  clusterName: cluster.clusterName,
+  vpcId: vpc.vpcId
+});
+services.addDependency(cluster);
+services.addDependency(tasks);
+services.addDependency(scaling);
+services.addDependency(alb);
+
+// Pipelines make sure we have a mechanism for deploying apps from a repo.
+const pipelines = new BawsPipelines(app, "pipelines", {
+  env: defaultEnv,
+  clusterName: cluster.clusterName,
+  bucket: s3.artifacts,
+  pipelineRole: roles.pipeline,
+  buildRole: roles.build,
+  config: config.pipeline
+});
+pipelines.addDependency(roles);
+pipelines.addDependency(commit);
+pipelines.addDependency(s3);
+
+// Optional, but recommended. Not part of any stack. 
+// Ideally, under the "monolith" model for which this is designed,
+//  one cdn stack per service would be created. 
+const cdn = new BawsCDN(app, "cdn", {
+  env: defaultEnv,
+  albDns: alb.dnsName,
+  config: config.cdn.distributions,
+  assetBucket: s3.assets,
+});
+cdn.addDependency(alb);
+cdn.addDependency(s3);
+
+// The lambda function which handles the delivery of notilfications on events.
+const notify = new BawsNotifyFunction(app, 'notifications', {
+  env: defaultEnv,
+  config: config.notifications,
+});
+
+// The CloudWatch Rules which transform and send relevant info to the notify function.
+const events = new BawsEvents(app, 'events', {
+  env: defaultEnv,
+  lambdaTargetArn: notify.function.functionArn,
+});
+events.addDependency(notify);
+
+/**
+ * Begin easily deployable stacks. 
+ * These stacks may be deployed using their stack names, but deleting them will not 
+ * delete the entire stack. Dependencies are uni-directional. 
+ * For instnace, running `cdk destroy stack-standard` will not delete the alb, rds, services,
+ * or other resources created in order to create the stack. Each service must be deleted individually.
+ * See your CloudFormation console to get a comprehensive list of resources running. 
+ */
+
+const full = new BawsPipelines(app, 'stack-full', {
+  env: defaultEnv,
+  clusterName: cluster.clusterName,
+  bucket: s3.artifacts,
+  pipelineRole: roles.pipeline,
+  buildRole: roles.build,
+  config: config.pipeline
+});
+full.addDependency(services);
+full.addDependency(commit);
+full.addDependency(cache);
+full.addDependency(rds);
+
+const standard = new BawsPipelines(app, 'stack-standard', {
+  env: defaultEnv,
+  clusterName: cluster.clusterName,
+  bucket: s3.artifacts,
+  pipelineRole: roles.pipeline,
+  buildRole: roles.build,
+  config: config.pipeline
+});
+standard.addDependency(services);
+standard.addDependency(commit);
+standard.addDependency(rds);
+
+const min = new BawsPipelines(app, 'stack-min', {
+  env: defaultEnv,
+  clusterName: cluster.clusterName,
+  bucket: s3.artifacts,
+  pipelineRole: roles.pipeline,
+  buildRole: roles.build,
+  config: config.pipeline
+});
+min.addDependency(services);
+min.addDependency(commit);
+
+/*
+const trigger = new BawsEventTrigger(app, 'trigger', {
+  lambdaFunctionArn: notify.function.functionArn,
+  ruleArn: events.
+});
+*/

@@ -1,0 +1,181 @@
+vpc:
+  name: bawsVpc
+  numPublicSubnets: 2
+  baseAddress: "10.0.0.0"
+  baseCidrSize: "24"
+s3:
+  # filesDir: ./config/s3
+  buckets:
+    # You may make as many buckets as you like but you must create at least one of each.
+    # One assets, one artifacts, and one logs. The first of each created will be used for 
+    # corresponding parts of baws stacks, as they're created.
+    - name: baws-pipeline
+      # assets | logs | artifacts
+      type: artifacts
+      addUniquId: true
+      # cdnReference:
+    - name: baws-assets
+      type: assets
+      addUniquId: true
+    - name: baws-logs
+      type: logs
+      addUniquId: true
+cdn:
+  # filesDir: ./config/cdn
+  distributions:
+    - name: baws cdn
+      enabled: true
+      # If 'global' is used for certificateArn, the `cloudFrontSSLCert` value from cdk.json
+      # will be used.
+      # When a valid value for certificateArn is provided, SSL redirect will automatically be enabled.
+      # To disable https for the distribution comment out the certificateArn variable.
+      # Certificates must be created in the us-east-1 region.
+      certificateArn: arn:aws:acm:us-east-1:415925718566:certificate/5295d80a-3498-464b-8261-8695afd2adb4
+      # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PriceClass.html
+      # PriceClass_100 | PriceClass_200 | PriceClass_ALL
+      priceClass: PriceClass_100
+      enableCookielessAssets: true
+      enablePostRequests: true
+      # Must be unique per account. You cannot have domains listed here which also belong to 
+      # other distributions
+      cnames:
+        - example.com
+        - '*.example.com'
+alb:
+  name: baws-alb
+efs:
+  name: baws efs
+  encrypted: false
+launchTemplates:
+  - name: baws-ecs-template
+    instanceName: baws auto
+    type: ecs
+    # Available types here: 
+    # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
+    instanceType: t3a.small
+    storageSize: 50
+    efs: true
+  - name: baws-bastion-instance
+    instanceName: baws bastion
+    type: bastion
+    instanceType: t3a.nano
+    storageSize: 20
+    efs: false
+scaling:
+  launchTemplateReference: baws-ecs-template
+  desiredSize: 2
+  maxSize: "7"
+  minSize: "1"
+rds:
+  # filesDir: ./config/rds
+  clusterName: baws-cluster
+  # `aurora` is the most compatible and feature complete version of Aurora.
+  # Other available options detailed here: 
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html
+  auroraEngine: aurora
+  # This must correlate to the option above. Details here: 
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbclusterparametergroup.html
+  paramFamily: aurora5.6
+  # aws rds create-db-cluster-parameter-group --db-cluster-parameter-group-name baws-57 --db-parameter-group-family aurora-mysql5.7 --description "Created for baws."
+  # wait 5 minutes after running command.
+  paramGroupName: baws-57
+  backupRetention: 7
+  # This is the parameter name stored in the parameter store.
+  # Create these either by using the command line from below (only from a secure terminal)
+  # Or by creating the parameter manually through the console.
+  masterUsernameSSM: db-master-user
+  masterPasswordSSM: db-master-pass
+  masterPasswordVersion: 1
+  # `dbHostParamName` and `dbROHostParamName` will set SSM values upon creation.
+  # The value listed under each key can be used by services which need the database host value.
+  dbHostParamName: db-host
+  dbROHostParamName: db-ro-host
+  instanceType: db.t3.small
+  clusterSize: 1
+cache:
+  # filesDir: ./config/cache
+  clusters:
+    - name: baws-cache
+      hostParamName: cache-host
+      instanceType: cache.t2.micro
+      # memcached | redis
+      engine: memcached
+      clusterSize: 1
+codeCommitRepos:
+  - name: baws-app
+    description: Created by CDK
+  - name: baws-second-app
+    description: Created by cdk
+ecs:
+  clusterName: baws-cluster
+  tasks:
+    - name: the-baws-app
+      type: ec2
+      logRegion: us-east-1
+      logGroup: baws-cdk-ecs
+      ecrRepoName: baws-app
+      hardMemoryLimit: 1024
+      softMemoryLimit: 256
+      hostPort: 0
+      containerPort: 80
+      cpuUnits: 256
+      # values passed directly to the container
+      variables:
+        # NGINX_ENABLED: drupal
+        # WEBROOT: web
+      # values retreived from the parameter store
+      # Underscored values listed here, for instance db_name, db_user, db_host must be created 
+      # in the parameter store before using them.
+      # Uncomment values according to usage.
+      # DB_HOST can be the value created by under `rds` under `dbHostParamName`
+      params:
+        # DB_HOST: db-host
+        # DB_HOST_RO: baws-db-host-ro
+        # DB_NAME: db_name
+        # DB_USER: db_user
+        # DB_PASS: db_pass
+        # REDIS_HOST: redis_host
+        # REDIS_PREFIX: redis_prefix
+      # Host volumes. Names here will be available as mount points in the bind section
+      # The key below `volumes` must have a corresponding volume key from above.
+      volumes:
+        # EFS: /mnt/efs/website-name/assets
+        # PRIVATE: /mnt/efs/website-name/private
+        # TMP: /mnt/efs/tmp/website-name
+      mounts:
+        # Drupal
+        EFS: /var/www/html/web/sites/default/files
+        TMP: /var/www/html/tmp
+        PRIVATE: /var/www/html/private
+        # WordPress
+        # EFS: /var/www/html/web/sites/plugins/uploads
+  services:
+    - name: baws-cdk-service
+      taskNameReference: the-baws-app
+      desiredCount: 4
+      listeners:
+        - host: illuminedigital.com
+        - host: "*.illuminedigital.com"
+pipeline:
+  # This name will be used to create a bucket, with a domain compiled from
+  # the domain name listed in cdk.json
+  bucketName: pipeline-bucket
+  pipelines:
+    - type: ecs
+      pipelineName: illumine-pipeline
+      projectName: baws-build
+      #must match repo name used in codecommit.
+      repoNameReference: illumine-app
+      branchToWatch: docker
+      # must match `name` under service.name in this document
+      serviceNameReference: baws-cdk-service
+      # must match `name` under service.name in this document
+      clusterNameReference: baws-cluster
+notifications:
+  pipeline:
+    functionName: baws-notifications
+    pipelineNameReference: illumine-pipeline
+    # Info on setting up a slack hook here: 
+    # https://api.slack.com/slack-apps
+    slackChannel: aws
+    slackURL: 
