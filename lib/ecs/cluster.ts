@@ -1,9 +1,5 @@
 import {Construct, Stack, StackProps} from '@aws-cdk/core';
 import { CfnCluster } from '@aws-cdk/aws-ecs';
-import { BawsVPCProps } from '../vpc/cnfvpc';
-
-
-
 
 export class BawsCluster extends Stack {
 

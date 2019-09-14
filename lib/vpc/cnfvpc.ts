@@ -12,6 +12,7 @@ import { InlineCode, SingletonFunction, Runtime, Function, Code } from "@aws-cdk
 
 import * as fs from "fs";
 import * as path from "path";
+import { threadId } from "worker_threads";
 
 
 export class BawsVPC extends Stack {
@@ -26,6 +27,8 @@ export class BawsVPC extends Stack {
   publicSubnets: CfnSubnet[] = [];
 
   gateway: CfnInternetGateway;
+
+
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -127,52 +130,7 @@ export class BawsVPC extends Stack {
   };
   
   
-  private createOpenRouteTable = () :void  => {
 
-    /*
-    const routeFunction = new Function(this, 'baws-route-function', {
-      functionName: 'baws-main-route-table-modifier',
-      description: 'Created by baws CDK to allow internet traffic into the main route table.',
-      runtime: Runtime.NODEJS_10_X,
-      handler: 'index.handler',
-      code: Code.fromAsset(path.join(__dirname, './routeTableFunction'))
-  });
-  */
-
-  const filename = path.join(__dirname, './routeTableFunction/index.js');
-  const routeFunction = new SingletonFunction(this, 'baws-singleton-function', {
-    uuid: '5ec278dc-d41a-11e9-bb65-2a2ae2dbcce4',
-    code: new InlineCode(fs.readFileSync(filename, {encoding: 'utf-8'})),
-    handler: 'index.main',
-    timeout: Duration.seconds(300),
-    runtime: Runtime.NODEJS_10_X,
-})
-
-  const routeFunctionPolicy = new PolicyStatement({
-      effect: Effect.ALLOW,
-      resources: ['*'],
-      actions: [
-          "ec2:CreateRoute",
-          "ec2:DescribeAccountAttributes",
-          "ec2:DescribeInternetGateways",
-          "ec2:DescribeRouteTables",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeTags",
-          "ec2:DescribeVpcs",
-      ]
-  });
-
-  routeFunction.addToRolePolicy(routeFunctionPolicy);
-
-  const resource = new CustomResource(this, 'baws-route-resource', {
-      provider: CustomResourceProvider.lambda(routeFunction),
-      properties: {
-          vpcid: this.vpcId
-      }
-  });
-
-  const response = resource.getAtt('Response').toString();
-  }  
 }
 
 

@@ -5,7 +5,6 @@ import { BawsVPC } from "../lib/vpc/cnfvpc";
 import { BawsRouteResource } from '../lib/vpc/routeResource';
 import { BawsScaling } from "../lib/servers/auto-scaling";
 import { BawsCluster } from "../lib/ecs/cluster";
-import { BawsECR } from "../lib/ecs/repos";
 import { BawsEFS } from "../lib/storage/efs";
 import { BawsTasks } from "../lib/ecs/tasks";
 import { BawsALB } from "../lib/servers/alb";

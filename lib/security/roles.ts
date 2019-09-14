@@ -58,10 +58,8 @@ export class BawsRoles extends Stack {
     });
     instanceProfile.addDependsOn(role);
 
-    // The ref from instance profile doesn't give us a full arn, so we create it.
     this.ec2InstanceRef = instanceProfile.attrArn;
-    //this.ec2InstanceRef = `arn:aws:iam::${this.account}:instance-profile/${instanceProfile.ref}`;
-
+    
     return role;
   };
 
@@ -113,17 +111,6 @@ export class BawsRoles extends Stack {
       ],
     });
 
-    /*
-    const role = new Role(this, "baws-deploy-role", {
-      assumedBy: new ServicePrincipal(`codedeploy.${this.region}.amazonaws.com`)
-    });
-
-    role.addManagedPolicy(
-      ManagedPolicy.fromAwsManagedPolicyName(
-        "service-role/AWSCodeDeployRole"
-      )
-    );
-        */
     return role;
   };
 
@@ -146,22 +133,7 @@ export class BawsRoles extends Stack {
         ''
       ]
     });
-    /*
-    const role = new Role(this, "baws-build-role", {
-      assumedBy: new ServicePrincipal('codebuild.amazonaws.com')
-    });
 
-    role.addManagedPolicy(
-      ManagedPolicy.fromAwsManagedPolicyName(
-        "AWSCodePipelineFullAccess"
-      )
-    );
-    role.addManagedPolicy(
-      ManagedPolicy.fromAwsManagedPolicyName(
-        "CloudWatchLogsFullAccess"
-      )
-    );
-    */
     return role;
   };
 
