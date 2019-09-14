@@ -3,9 +3,6 @@ Use CDK command line to build and manage complete infrastructure needed to conta
 
 This is currently an alpha build. More documentation and features arriving by October, 2019.
 
-## What You'll build
-A new VPC (and components for public access), 
-
 ---
 
 ## Getting Started
