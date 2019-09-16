@@ -13,7 +13,7 @@ export class BawsS3 extends Stack {
 
     for (let i = 0; i < props.config.length; i++) {
       const configItem = props.config[i];
-      let bucketName = (configItem.addUniquId === true)?`configItem.name-${uuid()}`: configItem.name ;
+      let bucketName = (configItem.addUniquId === true)?`configItem.name-${uuid().toLowerCase()}`: configItem.name ;
 
       const bucket = new CfnBucket(this, `baws-bucket-${configItem.name}`, {
         bucketName
