@@ -1,5 +1,6 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import { CfnBucket } from "@aws-cdk/aws-s3";
+import { StringParameter } from "@aws-cdk/aws-ssm";
 import uuid from "uuidv4";
 
 export class BawsS3 extends Stack {
@@ -12,11 +13,38 @@ export class BawsS3 extends Stack {
 
     for (let i = 0; i < props.config.length; i++) {
       const configItem = props.config[i];
-      const bucketUUID = uuid();
-      let bucketName =
-        configItem.addUniquId === true
-          ? `${configItem.name}-${bucketUUID.toLowerCase()}`
-          : configItem.name.toLowerCase();
+      let existingUUID = "";
+      let bucketName = configItem.name;
+
+      // If unique id is set to true, it's generated.
+      // but if another stack which depends on S3 is updated, we need to make
+      // sure UUIDs are not generated again, lest the buckets be deleted in order
+      // to be "updated".
+      if (configItem.addUniquId === true) {
+        try {
+          const existingBucketSSM = StringParameter.fromStringParameterName(
+            this,
+            `string-param-lookup-${configItem.name}`,
+            configItem.name
+          );
+          existingUUID = existingBucketSSM.stringValue;
+          bucketName = `${configItem.name}-${existingUUID}`
+        } catch (error) {
+          this.node.addInfo('No previoius bucket found. Generating new UUID');
+        }
+
+        // If we didn't fill in the blank above, create a new parameter.
+        if (existingUUID !== '') {
+          const bucketUUID = uuid();
+          new StringParameter(this, `string-param-create-${configItem.name}`, {
+            parameterName: configItem.name,
+            stringValue: bucketUUID,
+          });
+          bucketName = `${configItem.name}-${bucketUUID.toLowerCase()}`;
+        }
+      }
+
+      
 
       const bucket = new CfnBucket(this, `baws-bucket-${configItem.name}`, {
         bucketName
