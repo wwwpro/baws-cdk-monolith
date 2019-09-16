@@ -25,6 +25,7 @@ export class BawsScaling extends Stack {
 
 interface ScalingProps extends StackProps {
   vpcId: string;
+  desiredSize: string;
   maxSize: string;
   minSize: string;
   launchTemplateId: string;

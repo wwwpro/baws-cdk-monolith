@@ -47,7 +47,14 @@ Most options are commented or self-explanatory. Additional documentation will be
 
 ## Usage
 ---
-After setup, run the following command:
+
+After setup above, build the code locally:
+
+```bash
+npm run build
+```
+
+Then run the following command:
 
 ```bash
 cdk bootstrap
@@ -90,9 +97,13 @@ To destroy any stacks which fail to delete, you may have to take manual action, 
 ---
 The following features have the highest priority in future implementation:
 
-* **Blue/Green Deployments in the pipeline.**
+* **Blue/Green Deployment option in the pipeline.**
+* **Granular scaling options for services**
+* **Better scaling options for the `scaling` stack**
 * **Github support in pipelines.**
-* **"Files" support**, so configurations can reference directories, which contain a series of files for additional deployments. For instance, a services directory would contain yml files of individual services, to reduce the complexity of any single file. 
+* **"Files" support** for S3, CDN and Pipeline configs, similar to ECS, so yml files can be read from a directory instead of needing to be in the main config.  
+* **Fargate Stack** for deploying common utilities, such as PhpMyAdmin.
 
-
-
+## Contact 
+---
+wwwpro@baws.io

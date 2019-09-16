@@ -2,10 +2,8 @@
   "app": "npx ts-node bin/baws.ts",
   "reuquireApproval": "broadening",
   "context":{
-    "domain": "example.com",
     "bastionIps": ["192.168.0.1"],
     "SSLCertArn": "",
-    "cloudFrontSSLCertArn": "",
     "ec2Key": "Key Name"
   }
 }

@@ -63,7 +63,7 @@ launchTemplates:
     efs: false
 scaling:
   launchTemplateReference: baws-ecs-template
-  desiredSize: 2
+  desiredSize: "2"
   maxSize: "7"
   minSize: "1"
 rds:
@@ -108,6 +108,13 @@ codeCommitRepos:
     description: Created by cdk
 ecs:
   clusterName: baws-cluster
+  # Example files included in the corresponding directories below. Uncomment to use them.
+  # If task path is uncommented, both tasks defined in the directory files, and the tasks
+  # defined below will be created. Delete either the `tasksDir` or the tasks object below
+  # if you don't want them to be created.
+  
+  # tasksDir: config/ecs/tasks
+  # servicesDir: config/ecs/services
   tasks:
     - name: the-baws-app
       type: ec2
@@ -121,32 +128,35 @@ ecs:
       cpuUnits: 256
       # values passed directly to the container
       variables:
+        # NGINX_ENABLED and WEBROOT are applicable if you're using baws-nginx-* containers. 
+        # drupal | wordpress | default
         # NGINX_ENABLED: drupal
         # WEBROOT: web
       # values retreived from the parameter store
       # Underscored values listed here, for instance db_name, db_user, db_host must be created 
       # in the parameter store before using them.
       # Uncomment values according to usage.
-      # DB_HOST can be the value created by under `rds` under `dbHostParamName`
+      # DB_HOST and DB_HOST_RO values can match the value created `rds.dbHostParamName`
       params:
         # DB_HOST: db-host
-        # DB_HOST_RO: baws-db-host-ro
+        # DB_HOST_RO: db-host-ro
         # DB_NAME: db_name
         # DB_USER: db_user
         # DB_PASS: db_pass
         # REDIS_HOST: redis_host
         # REDIS_PREFIX: redis_prefix
       # Host volumes. Names here will be available as mount points in the bind section
-      # The key below `volumes` must have a corresponding volume key from above.
+      # The key below `mounts` must have a corresponding `volumes` key.
+      # `volumes` are the paths found in ec2 instances. `mounts` are the paths inside containers.
       volumes:
         # EFS: /mnt/efs/website-name/assets
         # PRIVATE: /mnt/efs/website-name/private
         # TMP: /mnt/efs/tmp/website-name
       mounts:
         # Drupal
-        EFS: /var/www/html/web/sites/default/files
-        TMP: /var/www/html/tmp
-        PRIVATE: /var/www/html/private
+        # EFS: /var/www/html/web/sites/default/files
+        # TMP: /var/www/html/tmp
+        # PRIVATE: /var/www/html/private
         # WordPress
         # EFS: /var/www/html/web/sites/plugins/uploads
   services:
@@ -154,8 +164,8 @@ ecs:
       taskNameReference: the-baws-app
       desiredCount: 4
       listeners:
-        - host: illuminedigital.com
-        - host: "*.illuminedigital.com"
+        - host: example.com
+        - host: "*.example.com"
 pipeline:
   # This name will be used to create a bucket, with a domain compiled from
   # the domain name listed in cdk.json

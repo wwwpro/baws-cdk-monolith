@@ -9,9 +9,6 @@ export class BawsEFS extends Stack {
 
   constructor(scope: Construct, id: string, props: EFSProps) {
     super(scope, id, props);
-    if (props.securityGroup !== null) {
-      this.node.addInfo(`My property is ${props.securityGroup.ref}`);
-    }
     
     this.cfnefs = new CfnFileSystem(this, "baws-cfnefs", {
       encrypted: false,

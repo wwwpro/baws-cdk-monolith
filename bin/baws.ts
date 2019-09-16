@@ -2,7 +2,7 @@
 import "source-map-support/register";
 import { App } from "@aws-cdk/core";
 import { BawsVPC } from "../lib/vpc/cnfvpc";
-import { BawsRouteResource } from '../lib/vpc/routeResource';
+import { BawsRouteResource } from "../lib/vpc/routeResource";
 import { BawsScaling } from "../lib/servers/auto-scaling";
 import { BawsCluster } from "../lib/ecs/cluster";
 import { BawsEFS } from "../lib/storage/efs";
@@ -19,14 +19,11 @@ import { BawsServices } from "../lib/ecs/services";
 import { BawsCache } from "../lib/cache/cache";
 import { BawsCDN } from "../lib/cdn/cdn";
 import { BawsS3 } from "../lib/storage/s3";
-import { BawsNotifyFunction }  from '../lib/lambda/notifications';
+import { BawsNotifyFunction } from "../lib/lambda/notifications";
 import { BawsEvents } from "../lib/cloudwatch/events";
 import { BawsEventTrigger } from "../lib/lambda/ruleTrigger";
 
-import * as yaml from "js-yaml";
-import * as fs from "fs";
-import * as path from "path";
-
+import { YamlConfig } from '../lib/baws/yaml-dir';
 
 let config: any;
 const app = new App();
@@ -41,19 +38,14 @@ const defaultEnv = {
 };
 
 // Load our configuration file.
-try {
-  const filename = path.join(__dirname, "../config.yml");
-  config = yaml.safeLoad(fs.readFileSync(filename, "utf8"));
-} catch (error) {
-  console.log(`Error loading cofig file ${error}. Copy config.sample.yml as config.yml and adjust settings to get started.`);
-}
+config = YamlConfig.getConfigFile('config.yml');
 
 // The foundation. We always need this.
 const vpc = new BawsVPC(app, "vpc", { env: defaultEnv });
 
-// We currently have a no way to access the main route table through CloudFormation, so we 
+// We currently have a no way to access the main route table through CloudFormation, so we
 // need this custom resource.
-const routeResource = new BawsRouteResource(app, 'route-resource', {
+const routeResource = new BawsRouteResource(app, "route-resource", {
   env: defaultEnv,
   vpcId: vpc.vpcId
 });
@@ -67,7 +59,7 @@ const security = new BawsSecurity(app, "security", {
 });
 security.addDependency(routeResource);
 
-// Roles which can rely on AWS managed roles are added here. 
+// Roles which can rely on AWS managed roles are added here.
 // Other roles which rely on service Arns are added in their respective stacks.
 const roles = new BawsRoles(app, "roles", {
   env: defaultEnv
@@ -125,13 +117,14 @@ const alb = new BawsALB(app, "alb", {
 });
 alb.addDependency(routeResource);
 
-// Our autoscaling group for cluster instances. 
+// Our autoscaling group for cluster instances.
 // Adjust settings in config.yml.
 const scaling = new BawsScaling(app, "scaling", {
   env: defaultEnv,
   vpcId: vpc.vpcId,
   maxSize: config.scaling.maxSize,
   minSize: config.scaling.minSize,
+  desiredSize: config.scaling.desiredSize,
   publicSubnets: vpc.publicSubnets,
   launchTemplateId: launchTemplate.templateId,
   launchTemplateVersion: launchTemplate.latestVersion,
@@ -160,7 +153,7 @@ const rds = new BawsRDS(app, "rds", {
 rds.addDependency(vpc);
 rds.addDependency(security);
 
-// Creates either a redis or memcached cluster, according to 
+// Creates either a redis or memcached cluster, according to
 // config.yml. Only part of the `stack-full` stack.
 const cache = new BawsCache(app, "cache", {
   env: defaultEnv,
@@ -172,12 +165,13 @@ cache.addDependency(vpc);
 cache.addDependency(security);
 
 // Creates tasks which are used by services.
-// Each service needs a task. 
+// Each service needs a task.
 const tasks = new BawsTasks(app, "tasks", {
   env: defaultEnv,
   config: config.ecs.tasks,
   executionRole: roles.ecsExecution,
-  taskRole: roles.ecsTask
+  taskRole: roles.ecsTask,
+  configDir: config.ecs.tasksDir
 });
 tasks.addDependency(roles);
 
@@ -186,6 +180,7 @@ tasks.addDependency(roles);
 const services = new BawsServices(app, "services", {
   env: defaultEnv,
   config: config.ecs.services,
+  configDir: config.ecs.servicesDir,
   tasks: tasks.taskMap,
   listenerArn: alb.listener.ref,
   albName: alb.albName,
@@ -210,41 +205,41 @@ pipelines.addDependency(roles);
 pipelines.addDependency(commit);
 pipelines.addDependency(s3);
 
-// Optional, but recommended. Not part of any stack. 
+// Optional, but recommended. Not part of any stack.
 // Ideally, under the "monolith" model for which this is designed,
-//  one cdn stack per service would be created. 
+//  one cdn stack per service would be created.
 const cdn = new BawsCDN(app, "cdn", {
   env: defaultEnv,
   albDns: alb.dnsName,
   config: config.cdn.distributions,
-  assetBucket: s3.assets,
+  assetBucket: s3.assets
 });
 cdn.addDependency(alb);
 cdn.addDependency(s3);
 
 // The lambda function which handles the delivery of notilfications on events.
-const notify = new BawsNotifyFunction(app, 'notifications', {
+const notify = new BawsNotifyFunction(app, "notifications", {
   env: defaultEnv,
-  config: config.notifications,
+  config: config.notifications
 });
 
 // The CloudWatch Rules which transform and send relevant info to the notify function.
-const events = new BawsEvents(app, 'events', {
+const events = new BawsEvents(app, "events", {
   env: defaultEnv,
-  lambdaTargetArn: notify.function.functionArn,
+  lambdaTargetArn: notify.function.functionArn
 });
 events.addDependency(notify);
 
 /**
- * Begin easily deployable stacks. 
- * These stacks may be deployed using their stack names, but deleting them will not 
- * delete the entire stack. Dependencies are uni-directional. 
+ * Begin easily deployable stacks.
+ * These stacks may be deployed using their stack names, but deleting them will not
+ * delete the entire stack. Dependencies are uni-directional.
  * For instnace, running `cdk destroy stack-standard` will not delete the alb, rds, services,
  * or other resources created in order to create the stack. Each service must be deleted individually.
- * See your CloudFormation console to get a comprehensive list of resources running. 
+ * See your CloudFormation console to get a comprehensive list of resources running.
  */
 
-const full = new BawsPipelines(app, 'stack-full', {
+const full = new BawsPipelines(app, "stack-full", {
   env: defaultEnv,
   clusterName: cluster.clusterName,
   bucket: s3.artifacts,
@@ -257,7 +252,7 @@ full.addDependency(commit);
 full.addDependency(cache);
 full.addDependency(rds);
 
-const standard = new BawsPipelines(app, 'stack-standard', {
+const standard = new BawsPipelines(app, "stack-standard", {
   env: defaultEnv,
   clusterName: cluster.clusterName,
   bucket: s3.artifacts,
@@ -269,7 +264,7 @@ standard.addDependency(services);
 standard.addDependency(commit);
 standard.addDependency(rds);
 
-const min = new BawsPipelines(app, 'stack-min', {
+const min = new BawsPipelines(app, "stack-min", {
   env: defaultEnv,
   clusterName: cluster.clusterName,
   bucket: s3.artifacts,
