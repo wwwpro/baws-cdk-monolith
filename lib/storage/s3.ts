@@ -1,9 +1,8 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import { CfnBucket } from "@aws-cdk/aws-s3";
-import uuid from 'uuidv4';
+import uuid from "uuidv4";
 
 export class BawsS3 extends Stack {
-
   assets: CfnBucket;
   artifacts: CfnBucket;
   logs: CfnBucket;
@@ -14,7 +13,10 @@ export class BawsS3 extends Stack {
     for (let i = 0; i < props.config.length; i++) {
       const configItem = props.config[i];
       const bucketUUID = uuid();
-      let bucketName = (configItem.addUniquId === true)?`configItem.name-${bucketUUID.toLowerCase()}`: configItem.name.toLowerCase() ;
+      let bucketName =
+        configItem.addUniquId === true
+          ? `${configItem.name}-${bucketUUID.toLowerCase()}`
+          : configItem.name.toLowerCase();
 
       const bucket = new CfnBucket(this, `baws-bucket-${configItem.name}`, {
         bucketName
