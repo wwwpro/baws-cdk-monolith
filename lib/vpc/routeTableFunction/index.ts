@@ -1,7 +1,6 @@
 "use strict";
 import * as AWS from "aws-sdk";
-import * as response from 'cfn-response';
-import { ConfigurationServicePlaceholders } from "aws-sdk/lib/config_service_placeholders";
+import * as response from './cfn-response';
 
 exports.handler = async (event: any, context:any) => {
   console.log(`EVENT REQUEST: ${JSON.stringify(event)}`);

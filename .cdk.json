@@ -1,6 +1,6 @@
 {
   "app": "npx ts-node bin/baws.ts",
-  "reuquireApproval": "broadening",
+  "requireApproval": "broadening",
   "context":{
     "bastionIps": ["192.168.0.1"],
     "SSLCertArn": "",
