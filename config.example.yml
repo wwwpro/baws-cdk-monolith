@@ -30,7 +30,7 @@ cdn:
       # When a valid value for certificateArn is provided, SSL redirect will automatically be enabled.
       # To disable https for the distribution comment out the certificateArn variable.
       # Certificates must be created in the us-east-1 region.
-      certificateArn: arn:aws:acm:us-east-1:415925718566:certificate/5295d80a-3498-464b-8261-8695afd2adb4
+      certificateArn: arn:aws:acm:us-east-1:12345679:certificate/5295d80a-3498-464b-8261-8695afd2adb4
       # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PriceClass.html
       # PriceClass_100 | PriceClass_200 | PriceClass_ALL
       priceClass: PriceClass_100

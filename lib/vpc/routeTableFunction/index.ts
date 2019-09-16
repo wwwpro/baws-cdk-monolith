@@ -1,6 +1,6 @@
 "use strict";
 import * as AWS from "aws-sdk";
-import * as response from './cfn-response';
+import * as response from 'cfn-response';
 import { ConfigurationServicePlaceholders } from "aws-sdk/lib/config_service_placeholders";
 
 exports.handler = async (event: any, context:any) => {
@@ -77,6 +77,5 @@ exports.handler = async (event: any, context:any) => {
   });
 
   await sendCFNRequest;
-  // We need this or nothing works. 
   
 };

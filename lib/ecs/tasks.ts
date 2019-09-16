@@ -2,7 +2,7 @@ import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import { CfnTaskDefinition, TaskDefinition } from "@aws-cdk/aws-ecs";
 import { CfnRole } from "@aws-cdk/aws-iam";
 import { CfnLogGroup } from "@aws-cdk/aws-logs";
-import { YamlConfig } from '../baws/yaml-dir';
+import { YamlConfig } from "../baws/yaml-dir";
 
 export class BawsTasks extends Stack {
   props: TaskProps;
@@ -22,10 +22,12 @@ export class BawsTasks extends Stack {
       });
     }
 
-    // Create tasks expressed directly in the config file.
-    for (let i = 0; i < props.config.length; i++) {
-      const configItem = this.props.config[i];
-      this.createTask(configItem);
+    if (typeof props.config !== "undefined") {
+      // Create tasks expressed directly in the config file.
+      for (let i = 0; i < props.config.length; i++) {
+        const configItem = this.props.config[i];
+        this.createTask(configItem);
+      }
     }
   }
 

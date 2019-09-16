@@ -30,22 +30,23 @@ export class BawsServices extends Stack {
     this.props = props;
     this.counter = 1;
 
-    // Pull in config files from directory. 
-    if (typeof props.configDir !== 'undefined') {
+    // Pull in config files from directory.
+    if (typeof props.configDir !== "undefined") {
       const configs = YamlConfig.getDirConfigs(props.configDir);
       configs.forEach(item => {
         this.createService(item);
       });
     }
 
-    // Create any services in the main config file.
-    for (let i = 0; i < props.config.length; i++) {
-      this.createService(props.config[i]);
+    if (typeof props.config !== "undefined") {
+      // Create any services in the main config file.
+      for (let i = 0; i < props.config.length; i++) {
+        this.createService(props.config[i]);
+      }
     }
   }
 
-  private createService = (serviceConfig:any) => {
-
+  private createService = (serviceConfig: any) => {
     // For simplified reading.
     const listeners = serviceConfig.listeners.map((x: any) => x.host);
 
@@ -64,20 +65,24 @@ export class BawsServices extends Stack {
       containerName = task.containerName;
     }
 
-    const target = new CfnTargetGroup(this, `baws-target-${serviceConfig.name}`, {
-      name: `${serviceConfig.name}-target`,
-      healthCheckEnabled: true,
-      healthCheckIntervalSeconds: 30,
-      healthCheckPath: "/",
-      healthCheckProtocol: "HTTP",
-      healthCheckTimeoutSeconds: 15,
-      healthyThresholdCount: 2,
-      matcher: { httpCode: "200,302" },
-      port: 80,
-      protocol: "HTTP",
-      unhealthyThresholdCount: 5,
-      vpcId: this.props.vpcId
-    });
+    const target = new CfnTargetGroup(
+      this,
+      `baws-target-${serviceConfig.name}`,
+      {
+        name: `${serviceConfig.name}-target`,
+        healthCheckEnabled: true,
+        healthCheckIntervalSeconds: 30,
+        healthCheckPath: "/",
+        healthCheckProtocol: "HTTP",
+        healthCheckTimeoutSeconds: 15,
+        healthyThresholdCount: 2,
+        matcher: { httpCode: "200,302" },
+        port: 80,
+        protocol: "HTTP",
+        unhealthyThresholdCount: 5,
+        vpcId: this.props.vpcId
+      }
+    );
 
     const listenerRule = new CfnListenerRule(
       this,
@@ -98,7 +103,7 @@ export class BawsServices extends Stack {
           }
         ],
         listenerArn: this.props.listenerArn,
-        priority: this.counter,
+        priority: this.counter
       }
     );
     listenerRule.addDependsOn(target);
