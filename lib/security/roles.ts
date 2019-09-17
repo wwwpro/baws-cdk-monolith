@@ -49,6 +49,7 @@ export class BawsRoles extends Stack {
         "arn:aws:iam::aws:policy/AmazonElasticFileSystemFullAccess",
         "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy",
         'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role',
+        'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore',
       ]
     });
 
