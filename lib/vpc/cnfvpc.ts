@@ -6,20 +6,13 @@ import {
   CfnSubnet,
   CfnVPCGatewayAttachment,
 } from "@aws-cdk/aws-ec2";
-import { Effect, PolicyStatement } from "@aws-cdk/aws-iam";
-import { CustomResource, CustomResourceProvider } from '@aws-cdk/aws-cloudformation';
-import { InlineCode, SingletonFunction, Runtime, Function, Code } from "@aws-cdk/aws-lambda";
-
-import * as fs from "fs";
-import * as path from "path";
-import { threadId } from "worker_threads";
-
 
 export class BawsVPC extends Stack {
   //Options
-  numzones: number = 3;
-  baseAddress: string = "10.0.0.0";
-  baseCidrSize: string = "24";
+  name: string;
+  numzones: number;
+  baseAddress: string;
+  baseCidrSize: string;
 
   vpc: CfnVPC;
   vpcId:string;
@@ -28,11 +21,14 @@ export class BawsVPC extends Stack {
 
   gateway: CfnInternetGateway;
 
-
-
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props: VPCProps) {
     super(scope, id, props);
     // Get VPC will create one of it doesn't exist.
+    this.name = props.config.name;
+    this.numzones = props.config.numPublicSubnets;
+    this.baseAddress = props.config.baseAddress;
+    this.baseCidrSize = props.config.baseCidrSize;
+
     this.vpc = this.createVPC();
   }
 
@@ -51,7 +47,7 @@ export class BawsVPC extends Stack {
         },
         {
           key: "Name",
-          value: "bawsVpc"
+          value: this.name
         }
       ]
     });
@@ -60,7 +56,6 @@ export class BawsVPC extends Stack {
 
     this.createSubnets();
     this.createIGateway();
-    // this.createOpenRouteTable();
 
     return this.vpc;
   };
@@ -69,8 +64,6 @@ export class BawsVPC extends Stack {
     // Get the zones from our context.
     const zones: string[] = this.availabilityZones;
 
-    // We don't want the number of available zones to be smaller thant the number of
-    // zone we're trying to set.
     this.numzones = zones.length > this.numzones ? this.numzones : zones.length;
 
     const startAddress: string | null = netparser.nextNetwork(
@@ -88,7 +81,7 @@ export class BawsVPC extends Stack {
           mapPublicIpOnLaunch: true,
           vpcId: this.vpc.ref,
           availabilityZone: zones[i],
-          tags: [{ key: "Name", value: "BAWS app " + i }]
+          tags: [{ key: "Name", value: `${this.name} - subnet - ${i}` }]
         });
 
         // Wait for it.
@@ -112,7 +105,7 @@ export class BawsVPC extends Stack {
       tags: [
         {
           key: "Name",
-          value: "Baws Internet Gateway"
+          value: `${this.name} - Internet Gateweay`
         }
       ]
     });
@@ -133,9 +126,7 @@ export class BawsVPC extends Stack {
 
 }
 
-
 // So we can easily pass the VPC created here to other processes.
-export interface BawsVPCProps extends StackProps {
-  vpcId: string;
-  publicSubnets?: CfnSubnet[];
+interface VPCProps extends StackProps {
+  config: any;
 }

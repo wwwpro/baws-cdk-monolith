@@ -1,4 +1,4 @@
-import { Construct, Stack, Fn } from "@aws-cdk/core";
+import { Construct, Stack, Fn, StackProps } from "@aws-cdk/core";
 import {
   CfnLaunchTemplate,
   UserData,
@@ -8,7 +8,6 @@ import {
   EcsOptimizedImage,
   AmiHardwareType,
 } from "@aws-cdk/aws-ecs";
-import { SecurityProps } from "../security/security-groups";
 
 export class BawsTemplate extends Stack {
   
@@ -131,7 +130,8 @@ export class BawsTemplate extends Stack {
   };
 }
 
-interface LaunchProps extends SecurityProps {
+interface LaunchProps extends StackProps {
+  vpcId: string;
   clusterName: string;
   efsId?: string;
   instanceRole: string;

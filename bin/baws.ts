@@ -23,25 +23,29 @@ import { BawsNotifyFunction } from "../lib/lambda/notifications";
 import { BawsEvents } from "../lib/cloudwatch/events";
 import { BawsEventTrigger } from "../lib/lambda/ruleTrigger";
 
-import { YamlConfig } from '../lib/baws/yaml-dir';
+import { YamlConfig } from "../lib/baws/yaml-dir";
 
 let config: any;
 const app = new App();
 
 // Get our default region and account.
-// Alter this on the command line by setting up and using "profiles".
-// For instance `cdk deploy stack-full --profile client1`
-
+// This will be altered by the usage of the "profile" flag
+// For instance `cdk deploy stack-full --profile profileName`
+// However, if you're using a variety of profiles on the same machine,
+// The general recommendation is to hard code the values below.
 const defaultEnv = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
   region: process.env.CDK_DEFAULT_REGION
 };
 
 // Load our configuration file.
-config = YamlConfig.getConfigFile('config.yml');
+config = YamlConfig.getConfigFile("config.yml");
 
 // The foundation. We always need this.
-const vpc = new BawsVPC(app, "vpc", { env: defaultEnv });
+const vpc = new BawsVPC(app, "vpc", {
+  env: defaultEnv,
+  config: config.vpc
+});
 
 // We currently have a no way to access the main route table through CloudFormation, so we
 // need this custom resource.

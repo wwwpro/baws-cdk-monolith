@@ -1,13 +1,11 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
-import { BawsVPC, BawsVPCProps } from "../vpc/cnfvpc";
 import { CfnTargetGroup } from "@aws-cdk/aws-elasticloadbalancingv2";
-import { Matcher } from "netparser";
 
 export class BawsTarget extends Stack {
   target: CfnTargetGroup;
   targetArn:string;
 
-  constructor(scope: Construct, id: string, props: BawsVPCProps) {
+  constructor(scope: Construct, id: string, props: TargetProps) {
     super(scope, id, props);
 
     this.target = new CfnTargetGroup(this, `baws-target-${id}`, {
@@ -26,4 +24,8 @@ export class BawsTarget extends Stack {
   
      this.targetArn = this.target.ref;
   }
+}
+
+interface TargetProps extends StackProps {
+  vpcId: string;
 }

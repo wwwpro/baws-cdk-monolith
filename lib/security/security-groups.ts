@@ -1,14 +1,12 @@
-import { Construct, Stack, CfnElement } from "@aws-cdk/core";
-import { BawsVPCProps } from "../vpc/cnfvpc";
+import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import { CfnSecurityGroup, CfnSecurityGroupProps } from "@aws-cdk/aws-ec2";
-
 
 /**
  * All security groups needed for operations go here, and are passed to their respective 
  * 
  */
 export class BawsSecurity extends Stack {
-  public readonly props: BawsVPCProps;
+  public readonly props: SecurityProps;
   public readonly vpcId: string;
   public readonly alb: CfnSecurityGroup;
   public readonly ec2: CfnSecurityGroup;
@@ -16,7 +14,7 @@ export class BawsSecurity extends Stack {
   public readonly efs: CfnSecurityGroup;
   public readonly cache: CfnSecurityGroup;
 
-  constructor(scope: Construct, id: string, props: BawsVPCProps) {
+  constructor(scope: Construct, id: string, props: SecurityProps) {
     super(scope, id, props);
 
     this.props = props;
@@ -146,6 +144,6 @@ export class BawsSecurity extends Stack {
   };
 }
 
-export interface SecurityProps extends BawsVPCProps {
-  securityGroup: CfnSecurityGroup;
+interface SecurityProps extends StackProps {
+  vpcId: string;
 }
