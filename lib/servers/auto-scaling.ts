@@ -11,7 +11,7 @@ export class BawsScaling extends Stack {
 
     new CfnAutoScalingGroup(this, "baws-cfn-scaling", {
       autoScalingGroupName: "baws-autoscale",
-      desiredCapacity: "2",
+      desiredCapacity: props.desiredSize,
       maxSize: props.maxSize,
       minSize: props.minSize,
       launchTemplate: {
