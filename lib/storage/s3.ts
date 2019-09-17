@@ -22,12 +22,12 @@ export class BawsS3 extends Stack {
       // to be "updated".
       if (configItem.addUniquId === true) {
         try {
-          const existingBucketSSM = StringParameter.fromStringParameterName(
+          const existingBucketSSM = StringParameter.valueForStringParameter(
             this,
             `string-param-lookup-${configItem.name}`,
             configItem.name
           );
-          existingUUID = existingBucketSSM.stringValue;
+          existingUUID = existingBucketSSM;
           bucketName = `${configItem.name}-${existingUUID}`
         } catch (error) {
           this.node.addInfo('No previoius bucket found. Generating new UUID');
