@@ -21,30 +21,9 @@ export class BawsS3 extends Stack {
       // sure UUIDs are not generated again, lest the buckets be deleted in order
       // to be "updated".
       if (configItem.addUniquId === true) {
-        try {
-          const existingBucketSSM = StringParameter.valueForStringParameter(
-            this,
-            `string-param-lookup-${configItem.name}`,
-            configItem.name
-          );
-          existingUUID = existingBucketSSM;
-          bucketName = `${configItem.name}-${existingUUID}`
-        } catch (error) {
-          this.node.addInfo('No previoius bucket found. Generating new UUID');
-        }
-
-        // If we didn't fill in the blank above, create a new parameter.
-        if (existingUUID !== '') {
-          const bucketUUID = uuid();
-          new StringParameter(this, `string-param-create-${configItem.name}`, {
-            parameterName: configItem.name,
-            stringValue: bucketUUID,
-          });
-          bucketName = `${configItem.name}-${bucketUUID.toLowerCase()}`;
-        }
+        // @todo, what is the best way to ensure a globally unique id?
+        bucketName = `${configItem.name}-${this.account}`;
       }
-
-      
 
       const bucket = new CfnBucket(this, `baws-bucket-${configItem.name}`, {
         bucketName
