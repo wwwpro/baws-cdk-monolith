@@ -33,7 +33,6 @@ export class BawsECR extends Stack {
     const repo = new CfnRepository(this, `baws-ecr-${config.name}`, {
       repositoryName: config.name
     });
-    this.repoMap.set(config.name, repo.ref);
   };
 }
 
