@@ -207,6 +207,7 @@ services.addDependency(alb);
 const pipelines = new BawsPipelines(app, "pipelines", {
   env: defaultEnv,
   taskMap: tasks.taskMap,
+  configDir: config.pipeline.configDir,
   clusterName: cluster.clusterName,
   bucket: s3.artifacts,
   pipelineRole: roles.pipeline,
