@@ -168,7 +168,11 @@ cache.addDependency(vpc);
 cache.addDependency(security);
 
 // Create the repos which will be used for our tasks.
-const ecr = new BawsECR(app, "ecr", { env: defaultEnv, config: config.ecs });
+const ecr = new BawsECR(app, "ecr", {
+  env: defaultEnv,
+  config: config.ecs,
+  configDir: config.ecs.tasksDir
+});
 
 // Creates tasks which are used by services.
 // Each service needs a task.
