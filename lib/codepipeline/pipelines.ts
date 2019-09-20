@@ -30,6 +30,8 @@ export class BawsPipelines extends Stack {
     // Create all of our pipelines.
     for (let i = 0; i < this.config.pipelines.length; i++) {
       const pipelineConfig = this.config.pipelines[i];
+      this.pipelineName = pipelineConfig.pipelineName;
+      
       const taskName: string =
         typeof pipelineConfig.taskNameReference !== "undefined"
           ? pipelineConfig.taskNameReference
