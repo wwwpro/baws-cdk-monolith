@@ -41,7 +41,7 @@ export class BawsPipelines extends Stack {
       });
     }
 
-    if (typeof props.config !== "undefined") {
+    if (typeof this.config.pipelines !== "undefined") {
       // Create all of our pipelines.
       for (let i = 0; i < this.config.pipelines.length; i++) {
         this.createPipeline(this.config.pipelines[i]);

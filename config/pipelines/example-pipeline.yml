@@ -1,7 +1,5 @@
 pipelineName: baws-pipeline
 type: ecs
-# Name of the build project.
-projectName: baws-build
 # must match repo name defined in codecommit.
 repoNameReference: baws-app
 branchToWatch: master
