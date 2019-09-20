@@ -1,13 +1,13 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
-import { CfnTaskDefinition, TaskDefinition } from "@aws-cdk/aws-ecs";
+import { CfnTaskDefinition } from "@aws-cdk/aws-ecs";
 import { CfnRole } from "@aws-cdk/aws-iam";
+import { CfnRepository, Repository } from "@aws-cdk/aws-ecr";
 import { CfnLogGroup } from "@aws-cdk/aws-logs";
 import { YamlConfig } from "../baws/yaml-dir";
 
 export class BawsTasks extends Stack {
   props: TaskProps;
   taskMap: Map<string, TaskInfo>;
-  logGroup: CfnLogGroup;
 
   constructor(scope: Construct, id: string, props: TaskProps) {
     super(scope, id, props);
@@ -35,7 +35,7 @@ export class BawsTasks extends Stack {
     // @todo decouple logs from task.
     const logGroupName = `/ecs/${taskConfig.name}`;
 
-    this.logGroup = new CfnLogGroup(
+    const logGroup = new CfnLogGroup(
       this,
       `baws-ecs-log-group-${taskConfig.name}`,
       {
@@ -77,7 +77,7 @@ export class BawsTasks extends Stack {
         family: taskConfig.name,
         containerDefinitions: [
           {
-            name: taskConfig.ecrRepoName,
+            name: taskConfig.name,
             image: "nginx:alpine",
             portMappings: [
               {
@@ -106,9 +106,21 @@ export class BawsTasks extends Stack {
         volumes
       }
     );
+
+    task.addDependsOn(logGroup);
+    const ecrURI =
+      taskConfig.createECR === true
+        ? Repository.fromRepositoryName(
+            this,
+            `baws-ecr-lookup-${taskConfig.name}`,
+            taskConfig.name
+          ).repositoryUri
+        : "";
+
     this.taskMap.set(taskConfig.name, {
       containerName: taskConfig.ecrRepoName,
       containerPort: taskConfig.containerPort,
+      ecrURI,
       taskRef: task.ref
     });
 
@@ -126,5 +138,6 @@ interface TaskProps extends StackProps {
 export interface TaskInfo {
   containerPort: number;
   containerName: string;
+  ecrURI: string;
   taskRef: string;
 }

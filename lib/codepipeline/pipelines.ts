@@ -5,6 +5,7 @@ import { Role, CfnRole } from "@aws-cdk/aws-iam";
 import { CfnProject } from "@aws-cdk/aws-codebuild";
 import { CfnRule } from "@aws-cdk/aws-events";
 import { CfnLogGroup } from "@aws-cdk/aws-logs";
+import { TaskInfo } from "../ecs/tasks";
 
 export class BawsPipelines extends Stack {
   private bucket: CfnBucket;
@@ -29,6 +30,10 @@ export class BawsPipelines extends Stack {
     // Create all of our pipelines.
     for (let i = 0; i < this.config.pipelines.length; i++) {
       const pipelineConfig = this.config.pipelines[i];
+      const taskName = this.config.pipelines[i].taskNameReference;
+      const taskMap:TaskInfo | undefined = this.props.taskMap.get(taskName);
+      const taskURI = (typeof taskMap !== 'undefined') ? taskMap.ecrURI: '';
+
 
       // Maybe we've been passed custom names. If so, use them.
       this.pipelineName =
@@ -69,7 +74,16 @@ export class BawsPipelines extends Stack {
             computeType: "BUILD_GENERAL1_SMALL",
             image: "aws/codebuild/standard:2.0",
             privilegedMode: true,
-            type: "LINUX_CONTAINER"
+            type: "LINUX_CONTAINER",
+            environmentVariables: [{
+              name: 'CONTAINER_NAME',
+              value: taskName
+            },
+            {
+              name: 'REPOSITORY_URI',
+              value: taskURI
+            }
+          ]
           },
           serviceRole: codeBuildRole.attrArn
         }
@@ -417,6 +431,7 @@ export class BawsPipelines extends Stack {
 
 interface pipelineConfig extends StackProps {
   bucket: CfnBucket;
+  taskMap: Map<string, TaskInfo>;
   pipelineRole: CfnRole;
   buildRole: Role;
   clusterName: string;

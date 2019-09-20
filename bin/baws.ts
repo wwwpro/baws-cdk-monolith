@@ -10,6 +10,7 @@ import { BawsTasks } from "../lib/ecs/tasks";
 import { BawsALB } from "../lib/servers/alb";
 import { BawsSecurity } from "../lib/security/security-groups";
 import { BawsTarget } from "../lib/servers/target-group";
+import { BawsECR } from "../lib/ecs/ecr";
 import { BawsTemplate } from "../lib/servers/launch-template";
 import { BawsCommit } from "../lib/codepipeline/commit";
 import { BawsRoles } from "../lib/security/roles";
@@ -144,8 +145,6 @@ const commit = new BawsCommit(app, "commit", {
   config: config.codeCommitRepos
 });
 
-// const ecr = new BawsECR(app, "ecr", { env: defaultEnv });
-
 // Creates an aurora cluster to be configured in config.yml.
 // Part of the `stack-full` and `stack-standard`
 const rds = new BawsRDS(app, "rds", {
@@ -168,6 +167,9 @@ const cache = new BawsCache(app, "cache", {
 cache.addDependency(vpc);
 cache.addDependency(security);
 
+// Create the repos which will be used for our tasks.
+const ecr = new BawsECR(app, "ecr", { env: defaultEnv, config: config.ecs });
+
 // Creates tasks which are used by services.
 // Each service needs a task.
 const tasks = new BawsTasks(app, "tasks", {
@@ -178,6 +180,7 @@ const tasks = new BawsTasks(app, "tasks", {
   configDir: config.ecs.tasksDir
 });
 tasks.addDependency(roles);
+tasks.addDependency(ecr);
 
 // Effectively the "app" which gets deployed to the servers
 // created in by the scaling stack.
@@ -199,6 +202,7 @@ services.addDependency(alb);
 // Pipelines make sure we have a mechanism for deploying apps from a repo.
 const pipelines = new BawsPipelines(app, "pipelines", {
   env: defaultEnv,
+  taskMap: tasks.taskMap,
   clusterName: cluster.clusterName,
   bucket: s3.artifacts,
   pipelineRole: roles.pipeline,
@@ -207,6 +211,7 @@ const pipelines = new BawsPipelines(app, "pipelines", {
 });
 pipelines.addDependency(roles);
 pipelines.addDependency(commit);
+pipelines.addDependency(services);
 pipelines.addDependency(s3);
 
 // Optional, but recommended. Not part of any stack.
@@ -246,6 +251,7 @@ events.addDependency(notify);
 const full = new BawsPipelines(app, "stack-full", {
   env: defaultEnv,
   clusterName: cluster.clusterName,
+  taskMap: tasks.taskMap,
   bucket: s3.artifacts,
   pipelineRole: roles.pipeline,
   buildRole: roles.build,
@@ -259,6 +265,7 @@ full.addDependency(rds);
 const standard = new BawsPipelines(app, "stack-standard", {
   env: defaultEnv,
   clusterName: cluster.clusterName,
+  taskMap: tasks.taskMap,
   bucket: s3.artifacts,
   pipelineRole: roles.pipeline,
   buildRole: roles.build,
@@ -271,6 +278,7 @@ standard.addDependency(rds);
 const min = new BawsPipelines(app, "stack-min", {
   env: defaultEnv,
   clusterName: cluster.clusterName,
+  taskMap: tasks.taskMap,
   bucket: s3.artifacts,
   pipelineRole: roles.pipeline,
   buildRole: roles.build,

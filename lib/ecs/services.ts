@@ -1,5 +1,4 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
-import { CfnRepository } from "@aws-cdk/aws-ecr";
 import {
   ContainerDefinition,
   CfnTaskDefinition,
@@ -14,7 +13,6 @@ import { TaskInfo } from "./tasks";
 import { YamlConfig } from "../baws/yaml-dir";
 
 export class BawsServices extends Stack {
-  repo: CfnRepository;
   task: CfnTaskDefinition;
   target: CfnTargetGroup;
   service: CfnService;
@@ -46,7 +44,10 @@ export class BawsServices extends Stack {
     }
   }
 
+
   private createService = (serviceConfig: any) => {
+
+
     // For simplified reading.
     const listeners = serviceConfig.listeners.map((x: any) => x.host);
 

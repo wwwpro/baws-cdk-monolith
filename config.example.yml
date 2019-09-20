@@ -104,8 +104,6 @@ cache:
 codeCommitRepos:
   - name: baws-app
     description: Created by CDK
-  - name: baws-second-app
-    description: Created by cdk
 ecs:
   clusterName: baws-cluster
   # Example files included in the corresponding directories below. Uncomment to use them.
@@ -116,11 +114,10 @@ ecs:
   # tasksDir: config/ecs/tasks
   # servicesDir: config/ecs/services
   tasks:
-    - name: the-baws-app
+    - name: baws-app
+      createECR: true
       type: ec2
       logRegion: us-east-1
-      logGroup: baws-cdk-ecs
-      ecrRepoName: baws-app
       hardMemoryLimit: 1024
       softMemoryLimit: 256
       hostPort: 0
@@ -160,8 +157,8 @@ ecs:
         # WordPress
         # EFS: /var/www/html/web/sites/plugins/uploads
   services:
-    - name: baws-cdk-service
-      taskNameReference: the-baws-app
+    - name: baws-service
+      taskNameReference: baws-app
       desiredCount: 4
       listeners:
         - host: example.com
@@ -172,19 +169,22 @@ pipeline:
   bucketName: pipeline-bucket
   pipelines:
     - type: ecs
-      pipelineName: illumine-pipeline
+      pipelineName: baws-pipeline
+      # Name of the build project.
       projectName: baws-build
       #must match repo name used in codecommit.
-      repoNameReference: illumine-app
+      repoNameReference: baws-app
       branchToWatch: docker
-      # must match `name` under service.name in this document
-      serviceNameReference: baws-cdk-service
-      # must match `name` under service.name in this document
+      # Must match `name` under tasks.name
+      taskNameReference: baws-app
+      # must match `name` under service.name
+      serviceNameReference: baws-service
+      # must match `name` under service.name
       clusterNameReference: baws-cluster
 notifications:
   pipeline:
     functionName: baws-notifications
-    pipelineNameReference: illumine-pipeline
+    pipelineNameReference: baws-pipeline
     # Info on setting up a slack hook here: 
     # https://api.slack.com/slack-apps
     slackChannel: aws

@@ -1,8 +1,7 @@
 name: example-app
+createECR: true
 type: ec2
 logRegion: us-east-1
-logGroup: example-app
-ecrRepoName: example-app
 hardMemoryLimit: 1024
 softMemoryLimit: 256
 hostPort: 0
