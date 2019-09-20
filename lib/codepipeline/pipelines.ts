@@ -30,10 +30,12 @@ export class BawsPipelines extends Stack {
     // Create all of our pipelines.
     for (let i = 0; i < this.config.pipelines.length; i++) {
       const pipelineConfig = this.config.pipelines[i];
-      const taskName = this.config.pipelines[i].taskNameReference;
-      const taskMap:TaskInfo | undefined = this.props.taskMap.get(taskName);
-      const taskURI = (typeof taskMap !== 'undefined') ? taskMap.ecrURI: '';
-
+      const taskName: string =
+        typeof pipelineConfig.taskNameReference !== "undefined"
+          ? pipelineConfig.taskNameReference
+          : "";
+      const taskMap: TaskInfo | undefined = this.props.taskMap.get(taskName);
+      const taskURI = typeof taskMap !== "undefined" ? taskMap.ecrURI : "";
 
       // Maybe we've been passed custom names. If so, use them.
       this.pipelineName =
@@ -46,12 +48,19 @@ export class BawsPipelines extends Stack {
           ? `${pipelineConfig.projectName}`
           : `baws-project-${id}`;
 
-      this.bucketName = (typeof props.bucket.bucketName !== 'undefined') ? props.bucket.bucketName: ''
+      this.bucketName =
+        typeof props.bucket.bucketName !== "undefined"
+          ? props.bucket.bucketName
+          : "";
       const codeBuildRole = this.createCodeBuildRole();
 
-      const logGroup = new CfnLogGroup(this, `baws-pipeline-log-group-${this.pipelineName}`, {
-        logGroupName: `/codebuild/${this.pipelineName}`
-      });
+      const logGroup = new CfnLogGroup(
+        this,
+        `baws-pipeline-log-group-${this.pipelineName}`,
+        {
+          logGroupName: `/codebuild/${this.pipelineName}`
+        }
+      );
 
       const cfnProject = new CfnProject(
         this,
@@ -75,15 +84,16 @@ export class BawsPipelines extends Stack {
             image: "aws/codebuild/standard:2.0",
             privilegedMode: true,
             type: "LINUX_CONTAINER",
-            environmentVariables: [{
-              name: 'CONTAINER_NAME',
-              value: taskName
-            },
-            {
-              name: 'REPOSITORY_URI',
-              value: taskURI
-            }
-          ]
+            environmentVariables: [
+              {
+                name: "CONTAINER_NAME",
+                value: taskName
+              },
+              {
+                name: "REPOSITORY_URI",
+                value: taskURI
+              }
+            ]
           },
           serviceRole: codeBuildRole.attrArn
         }
@@ -111,7 +121,10 @@ export class BawsPipelines extends Stack {
               pipelineConfig.branchToWatch
             ),
             this.getBuildStage(projectName),
-            this.getECSDeploy(pipelineConfig.clusterNameReference, pipelineConfig.serviceNameReference)
+            this.getECSDeploy(
+              pipelineConfig.clusterNameReference,
+              pipelineConfig.serviceNameReference
+            )
           ]
         }
       );
