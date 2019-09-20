@@ -33,20 +33,9 @@ export class BawsPipelines extends Stack {
       const taskName: string =
         typeof pipelineConfig.taskNameReference !== "undefined"
           ? pipelineConfig.taskNameReference
-          : "";
+          : "undefined";
       const taskMap: TaskInfo | undefined = this.props.taskMap.get(taskName);
-      const taskURI = typeof taskMap !== "undefined" ? taskMap.ecrURI : "";
-
-      // Maybe we've been passed custom names. If so, use them.
-      this.pipelineName =
-        typeof pipelineConfig.pipelineName !== "undefined"
-          ? pipelineConfig.pipelineName
-          : `baws-pipeline-${id}`;
-
-      const projectName =
-        typeof pipelineConfig.projectName !== "undefined"
-          ? `${pipelineConfig.projectName}`
-          : `baws-project-${id}`;
+      const taskURI = typeof taskMap !== "undefined" ? taskMap.ecrURI : "undefined";
 
       this.bucketName =
         typeof props.bucket.bucketName !== "undefined"
@@ -66,7 +55,7 @@ export class BawsPipelines extends Stack {
         this,
         `baws-build-project-${this.pipelineName}`,
         {
-          name: projectName,
+          name: pipelineConfig.projectName,
           artifacts: {
             type: "CODEPIPELINE"
           },
@@ -120,7 +109,7 @@ export class BawsPipelines extends Stack {
               pipelineConfig.repoNameReference,
               pipelineConfig.branchToWatch
             ),
-            this.getBuildStage(projectName),
+            this.getBuildStage(pipelineConfig.projectName),
             this.getECSDeploy(
               pipelineConfig.clusterNameReference,
               pipelineConfig.serviceNameReference

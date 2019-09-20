@@ -115,7 +115,7 @@ export class BawsTasks extends Stack {
             `baws-ecr-lookup-${taskConfig.name}`,
             taskConfig.name
           ).repositoryUri
-        : "";
+        : "none";
 
     this.taskMap.set(taskConfig.name, {
       containerName: taskConfig.name,

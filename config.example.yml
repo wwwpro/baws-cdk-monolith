@@ -175,9 +175,9 @@ pipeline:
       #must match repo name used in codecommit.
       repoNameReference: baws-app
       branchToWatch: docker
-      # Must match `name` under tasks.name
+      # Must match `name` under ecs.tasks.name
       taskNameReference: baws-app
-      # must match `name` under service.name
+      # must match `name` under ecs.service.name
       serviceNameReference: baws-service
       # must match `name` under service.name
       clusterNameReference: baws-cluster
