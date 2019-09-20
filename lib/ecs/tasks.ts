@@ -118,7 +118,7 @@ export class BawsTasks extends Stack {
         : "";
 
     this.taskMap.set(taskConfig.name, {
-      containerName: taskConfig.ecrRepoName,
+      containerName: taskConfig.name,
       containerPort: taskConfig.containerPort,
       ecrURI,
       taskRef: task.ref
