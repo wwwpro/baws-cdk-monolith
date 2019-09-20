@@ -29,11 +29,11 @@ export class BawsPipelines extends Stack {
     this.id = id;
 
     this.bucketName =
-        typeof props.bucket.bucketName !== "undefined"
-          ? props.bucket.bucketName
-          : "";
+      typeof props.bucket.bucketName !== "undefined"
+        ? props.bucket.bucketName
+        : "";
 
-     // Pull in config files from directory, and create them if we got 'em.
+    // Pull in config files from directory, and create them if we got 'em.
     if (typeof props.configDir !== "undefined") {
       const configs = YamlConfig.getDirConfigs(props.configDir);
       configs.forEach(item => {
@@ -41,10 +41,11 @@ export class BawsPipelines extends Stack {
       });
     }
 
-
-    // Create all of our pipelines.
-    for (let i = 0; i < this.config.pipelines.length; i++) {
-      this.createPipeline(this.config.pipelines[i]);
+    if (typeof props.config !== "undefined") {
+      // Create all of our pipelines.
+      for (let i = 0; i < this.config.pipelines.length; i++) {
+        this.createPipeline(this.config.pipelines[i]);
+      }
     }
   }
 
