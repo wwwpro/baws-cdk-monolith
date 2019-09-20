@@ -1,0 +1,13 @@
+pipelineName: baws-pipeline
+type: ecs
+# Name of the build project.
+projectName: baws-build
+# must match repo name defined in codecommit.
+repoNameReference: baws-app
+branchToWatch: master
+# Must match `name` under ecs.tasks.name
+taskNameReference: baws-app
+# must match `name` under ecs.service.name
+serviceNameReference: baws-service
+# must match `name` under service.name
+clusterNameReference: baws-cluster

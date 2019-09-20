@@ -166,7 +166,7 @@ ecs:
 pipeline:
   # This name will be used to create a bucket, with a domain compiled from
   # the domain name listed in cdk.json
-  bucketName: pipeline-bucket
+  # configDir: config/pipelines
   pipelines:
     - type: ecs
       pipelineName: baws-pipeline
@@ -174,7 +174,7 @@ pipeline:
       projectName: baws-build
       #must match repo name used in codecommit.
       repoNameReference: baws-app
-      branchToWatch: docker
+      branchToWatch: master
       # Must match `name` under ecs.tasks.name
       taskNameReference: baws-app
       # must match `name` under ecs.service.name

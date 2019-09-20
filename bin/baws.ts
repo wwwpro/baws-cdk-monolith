@@ -255,6 +255,7 @@ events.addDependency(notify);
 const full = new BawsPipelines(app, "stack-full", {
   env: defaultEnv,
   clusterName: cluster.clusterName,
+  configDir: config.pipeline.configDir,
   taskMap: tasks.taskMap,
   bucket: s3.artifacts,
   pipelineRole: roles.pipeline,
@@ -269,6 +270,7 @@ full.addDependency(rds);
 const standard = new BawsPipelines(app, "stack-standard", {
   env: defaultEnv,
   clusterName: cluster.clusterName,
+  configDir: config.pipeline.configDir,
   taskMap: tasks.taskMap,
   bucket: s3.artifacts,
   pipelineRole: roles.pipeline,
@@ -282,6 +284,7 @@ standard.addDependency(rds);
 const min = new BawsPipelines(app, "stack-min", {
   env: defaultEnv,
   clusterName: cluster.clusterName,
+  configDir: config.pipeline.configDir,
   taskMap: tasks.taskMap,
   bucket: s3.artifacts,
   pipelineRole: roles.pipeline,
