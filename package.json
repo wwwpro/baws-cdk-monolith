@@ -1,5 +1,5 @@
 {
-  "name": "baws",
+  "name": "@baws/cdk-monolith",
   "version": "0.1.0",
   "bin": {
     "baws": "bin/baws.js"
@@ -49,5 +49,30 @@
     "path": "^0.12.7",
     "source-map-support": "^0.5.13",
     "uuidv4": "^5.0.1"
-  }
+  },
+  "description": "Use CDK command line to build and manage complete infrastructure needed to containerize and modernize your monolith applications such as WordPress, Drupal, Flask, Django, any static site generator with Docker and CodePipelines",
+  "main": "bin/baws.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wwwpro/baws-cdk-monolith.git"
+  },
+  "keywords": [
+    "cdk",
+    "aws",
+    "docker",
+    "ecs",
+    "codepipeline",
+    "wordpress",
+    "drupal",
+    "monolith"
+  ],
+  "author": "Will Willerton",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/wwwpro/baws-cdk-monolith/issues"
+  },
+  "homepage": "https://github.com/wwwpro/baws-cdk-monolith#readme"
 }
