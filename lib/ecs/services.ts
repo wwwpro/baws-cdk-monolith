@@ -8,7 +8,6 @@ import {
   CfnTargetGroup,
   CfnListenerRule
 } from "@aws-cdk/aws-elasticloadbalancingv2";
-import { CfnLogGroup } from "@aws-cdk/aws-logs";
 import { TaskInfo } from "./tasks";
 import { YamlConfig } from "../baws/yaml-dir";
 
@@ -16,7 +15,6 @@ export class BawsServices extends Stack {
   task: CfnTaskDefinition;
   target: CfnTargetGroup;
   service: CfnService;
-  logGroup: CfnLogGroup;
   container: ContainerDefinition;
   counter: number;
 

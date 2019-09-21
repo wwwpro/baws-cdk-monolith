@@ -1,7 +1,7 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import { CfnTaskDefinition } from "@aws-cdk/aws-ecs";
 import { CfnRole } from "@aws-cdk/aws-iam";
-import { CfnRepository, Repository } from "@aws-cdk/aws-ecr";
+import { Repository } from "@aws-cdk/aws-ecr";
 import { CfnLogGroup } from "@aws-cdk/aws-logs";
 import { YamlConfig } from "../baws/yaml-dir";
 
@@ -94,7 +94,7 @@ export class BawsTasks extends Stack {
             logConfiguration: {
               logDriver: "awslogs",
               options: {
-                "awslogs-region": taskConfig.logRegion,
+                "awslogs-region": this.region,
                 "awslogs-group": logGroupName,
                 "awslogs-stream-prefix": "ecs"
               }
