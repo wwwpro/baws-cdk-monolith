@@ -200,8 +200,8 @@ const services = new BawsServices(app, "services", {
 });
 services.addDependency(cluster);
 services.addDependency(tasks);
-//services.addDependency(scaling);
-services.addDependency(alb);
+services.addDependency(scaling);
+
 
 // Pipelines make sure we have a mechanism for deploying apps from a repo.
 const pipelines = new BawsPipelines(app, "pipelines", {
