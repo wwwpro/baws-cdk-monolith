@@ -17,12 +17,13 @@ export class BawsScaling extends Stack {
   constructor(scope: Construct, id: string, props: ScalingProps) {
     super(scope, id, props);
 
+    this.props = props;
     const vpcZoneIdentifier = Array.from(props.publicSubnets, x => x.ref);
 
     const launchTemplate = new CfnLaunchTemplate(
       this,
       `baws-launch-scaling-${id}`,
-      this.prepareLaunchTemplate(this.props.config.launchTemplate)
+      this.prepareLaunchTemplate(props.config.launchTemplate)
     );
 
     new CfnAutoScalingGroup(this, "baws-cfn-scaling", {
@@ -102,7 +103,7 @@ export class BawsScaling extends Stack {
     };
   };
 
-  
+
   private buildUserData = (): string[] => {
     const commands: string[] = [];
     // Update everything.
