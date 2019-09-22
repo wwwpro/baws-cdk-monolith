@@ -98,7 +98,7 @@ const cluster = new BawsCluster(app, "cluster", {
 // the `scaling` stack as well.
 const launchTemplate = new BawsTemplate(app, "launch-template", {
   env: defaultEnv,
-  ec2SecurityGroup: security.ec2.ref,
+  ec2SecurityGroup: security.ec2,
   instanceRole: roles.ec2InstanceRef,
   vpcId: vpc.vpcId,
   efsId: efs.efsId,

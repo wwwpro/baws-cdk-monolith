@@ -1,7 +1,7 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import { CfnAutoScalingGroup } from "@aws-cdk/aws-autoscaling";
 import { CfnTargetGroup } from "@aws-cdk/aws-elasticloadbalancingv2";
-import { CfnSubnet } from "@aws-cdk/aws-ec2";
+import { CfnSubnet, CfnSecurityGroup } from "@aws-cdk/aws-ec2";
 import { BawsTemplate } from "../servers/launch-template";
 
 export class BawsScaling extends Stack {
@@ -38,7 +38,7 @@ interface ScalingProps extends StackProps {
   vpcId: string;
   instanceRole: string;
   clusterName: string;
-  ec2SecurityGroup: string;
+  ec2SecurityGroup: CfnSecurityGroup;
   efsId: string;
   baseTarget?: CfnTargetGroup;
   publicSubnets: CfnSubnet[];

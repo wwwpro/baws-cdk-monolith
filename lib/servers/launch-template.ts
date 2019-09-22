@@ -23,7 +23,7 @@ export class BawsTemplate extends Stack {
   constructor(scope: Construct, id: string, props: LaunchProps) {
     super(scope, id, props);
 
-    this.node.addInfo(`Security group: ${props.ec2SecurityGroup}`);
+    this.node.addInfo(`Security group: ${props.ec2SecurityGroup.ref}`);
     this.clusterName = props.clusterName;
 
     this.efsId = typeof props.efsId !== "undefined" ? props.efsId : false;
@@ -53,7 +53,7 @@ export class BawsTemplate extends Stack {
         const renderedData = rawData.render();
         const userData = Fn.base64(renderedData);
 
-        const securityId = props.ec2SecurityGroup;
+        const securityId = props.ec2SecurityGroup.ref;
 
         this.launchTemplate = new CfnLaunchTemplate(
           this,
@@ -135,6 +135,6 @@ interface LaunchProps extends StackProps {
   efsId?: string;
   instanceRole: string;
   storageSize?: string;
-  ec2SecurityGroup: string;
+  ec2SecurityGroup: CfnSecurityGroup;
   config: any[];
 }
