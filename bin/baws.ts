@@ -126,7 +126,7 @@ const scaling = new BawsScaling(app, "scaling", {
   env: defaultEnv,
   vpcId: vpc.vpcId,
   instanceRole: roles.ec2.ref,
-  ec2SecurityGroup: security.ec2.ref,
+  ec2SecurityGroup: security.ec2,
   publicSubnets: vpc.publicSubnets,
   baseTarget: alb.target,
   clusterName: cluster.clusterName,
