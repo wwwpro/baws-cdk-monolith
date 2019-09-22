@@ -68,9 +68,9 @@ scaling:
   minSize: "1"
   # This is paired with scaling, instead of pulling from the template config,
   # because dependent stacks cannot be updated, which prevents
-  # changes to the launch template after autoscaling has been setup.
-  # This appears to be a known issue with CDK, detailed here: https://github.com/aws/aws-cdk/issues/3414
-  # Once the issue is resolved, the launch template will separated again. 
+  # changes to the launch template after autoscaling has been setup. This is bad.
+  # It appears to be a known issue with CDK, detailed here: https://github.com/aws/aws-cdk/issues/3414
+  # Once the issue is resolved, the launch template will be separated again. 
   launchTemplate:
     name: baws-ecs-template
     instanceName: baws auto

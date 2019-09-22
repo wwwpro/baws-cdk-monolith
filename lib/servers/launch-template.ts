@@ -2,10 +2,8 @@ import { Construct, Stack, Fn, StackProps } from "@aws-cdk/core";
 import {
   CfnLaunchTemplate,
   UserData,
-  CfnSecurityGroup
 } from "@aws-cdk/aws-ec2";
 import { EcsOptimizedImage, AmiHardwareType } from "@aws-cdk/aws-ecs";
-import { config } from "aws-sdk";
 
 export class BawsTemplate extends Stack {
   /**
@@ -131,7 +129,7 @@ export class BawsTemplate extends Stack {
   };
 }
 
-interface configItem {
+export interface configItem {
   name: string;
   type: string;
   instanceName: string;
@@ -140,7 +138,7 @@ interface configItem {
   instanceSize: string;
 }
 
-interface LaunchProps extends StackProps {
+export interface LaunchProps extends StackProps {
   vpcId: string;
   clusterName: string;
   efsId?: string;

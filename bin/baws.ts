@@ -126,8 +126,10 @@ alb.addDependency(routeResource);
 const scaling = new BawsScaling(app, "scaling", {
   env: defaultEnv,
   vpcId: vpc.vpcId,
-  launchTemplateId: launchTemplate.templateId,
-  launchTemplateVersion: launchTemplate.latestVersion,
+  efsId: efs.efsId,
+  ec2SecurityGroup: security.ec2.ref,
+  instanceRole: roles.ec2.ref,
+  clusterName: cluster.clusterName,
   publicSubnets: vpc.publicSubnets,
   config: config.scaling,
 });
