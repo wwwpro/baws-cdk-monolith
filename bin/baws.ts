@@ -9,7 +9,6 @@ import { BawsEFS } from "../lib/storage/efs";
 import { BawsTasks } from "../lib/ecs/tasks";
 import { BawsALB } from "../lib/servers/alb";
 import { BawsSecurity } from "../lib/security/security-groups";
-import { BawsTarget } from "../lib/servers/target-group";
 import { BawsECR } from "../lib/ecs/ecr";
 import { BawsTemplate } from "../lib/servers/launch-template";
 import { BawsCommit } from "../lib/codepipeline/commit";
@@ -22,7 +21,6 @@ import { BawsCDN } from "../lib/cdn/cdn";
 import { BawsS3 } from "../lib/storage/s3";
 import { BawsNotifyFunction } from "../lib/lambda/notifications";
 import { BawsEvents } from "../lib/cloudwatch/events";
-import { BawsEventTrigger } from "../lib/lambda/ruleTrigger";
 
 import { YamlConfig } from "../lib/baws/yaml-dir";
 
@@ -100,7 +98,7 @@ const cluster = new BawsCluster(app, "cluster", {
 // the `scaling` stack as well.
 const launchTemplate = new BawsTemplate(app, "launch-template", {
   env: defaultEnv,
-  securityGroup: security.ec2,
+  ec2SecurityGroup: security.ec2.ref,
   instanceRole: roles.ec2InstanceRef,
   vpcId: vpc.vpcId,
   efsId: efs.efsId,
@@ -127,16 +125,16 @@ alb.addDependency(routeResource);
 const scaling = new BawsScaling(app, "scaling", {
   env: defaultEnv,
   vpcId: vpc.vpcId,
-  maxSize: config.scaling.maxSize,
-  minSize: config.scaling.minSize,
-  desiredSize: config.scaling.desiredSize,
+  instanceRole: roles.ec2.ref,
+  ec2SecurityGroup: security.ec2.ref,
   publicSubnets: vpc.publicSubnets,
-  launchTemplateId: launchTemplate.templateId,
-  launchTemplateVersion: launchTemplate.latestVersion,
-  baseTarget: alb.target
+  baseTarget: alb.target,
+  clusterName: cluster.clusterName,
+  efsId: efs.efsId,
+  config: config.scaling,
 });
+scaling.addDependency(efs);
 scaling.addDependency(alb);
-scaling.addDependency(launchTemplate);
 
 // Each one of our pipelines needs a repo, created here.
 // Github support is on the roadmap.

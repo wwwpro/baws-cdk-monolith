@@ -66,6 +66,20 @@ scaling:
   desiredSize: "2"
   maxSize: "7"
   minSize: "1"
+  # This is paired with scaling, instead of pulling from the template config,
+  # because dependent stacks cannot be updated, which prevents
+  # changes to the launch template after autoscaling has been setup.
+  # This appears to be a known issue with CDK, detailed here: https://github.com/aws/aws-cdk/issues/3414
+  # Once the issue is resolved, the launch template will separated again. 
+  launchTemplate:
+    name: baws-ecs-template
+    instanceName: baws auto
+    type: ecs
+    # Available types here: 
+    # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
+    instanceType: t3a.small
+    storageSize: 50
+    efs: true
 rds:
   # filesDir: ./config/rds
   clusterName: baws-cluster
