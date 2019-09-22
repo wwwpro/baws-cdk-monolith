@@ -25,8 +25,7 @@ export class BawsTasks extends Stack {
     if (typeof props.config !== "undefined") {
       // Create tasks expressed directly in the config file.
       for (let i = 0; i < props.config.length; i++) {
-        const configItem = this.props.config[i];
-        this.createTask(configItem);
+        this.createTask(this.props.config[i]);
       }
     }
   }

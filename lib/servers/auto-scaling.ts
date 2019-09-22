@@ -8,17 +8,7 @@ export class BawsScaling extends Stack {
   constructor(scope: Construct, id: string, props: ScalingProps) {
     super(scope, id, props);
 
-    const vpcZoneIdentifier = Array.from(props.publicSubnets, x => x.ref);
-
-    const template = new BawsTemplate(this, `baws-scaling-template-${id}`, {
-      env: props.env,
-      ec2SecurityGroup: props.ec2SecurityGroup,
-      instanceRole: props.instanceRole,
-      vpcId: props.vpcId,
-      efsId: props.efsId,
-      clusterName: props.clusterName,
-      config: props.config.launchTemplate
-    });
+    const vpcZoneIdentifier = Array.from(props.publicSubnets, x => x.ref);    
 
     new CfnAutoScalingGroup(this, "baws-cfn-scaling", {
       autoScalingGroupName: "baws-autoscale",
@@ -26,8 +16,8 @@ export class BawsScaling extends Stack {
       maxSize: props.config.maxSize,
       minSize: props.config.minSize,
       launchTemplate: {
-        version: template.latestVersion,
-        launchTemplateId: template.templateId
+        version: props.launchTemplateVersion,
+        launchTemplateId: props.launchTemplateId,
       },
       vpcZoneIdentifier
     });
@@ -35,12 +25,9 @@ export class BawsScaling extends Stack {
 }
 
 interface ScalingProps extends StackProps {
-  vpcId: string;
-  instanceRole: string;
-  clusterName: string;
-  ec2SecurityGroup: CfnSecurityGroup;
-  efsId: string;
-  baseTarget?: CfnTargetGroup;
+  vpcId: string;  
+  launchTemplateVersion: string;
+  launchTemplateId: string;
   publicSubnets: CfnSubnet[];
   config: any;
 }

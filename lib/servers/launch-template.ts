@@ -4,13 +4,10 @@ import {
   UserData,
   CfnSecurityGroup
 } from "@aws-cdk/aws-ec2";
-import {
-  EcsOptimizedImage,
-  AmiHardwareType,
-} from "@aws-cdk/aws-ecs";
+import { EcsOptimizedImage, AmiHardwareType } from "@aws-cdk/aws-ecs";
+import { config } from "aws-sdk";
 
 export class BawsTemplate extends Stack {
-  
   /**
    * @see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-launchtemplate-launchtemplatedata.html
    */
@@ -19,86 +16,91 @@ export class BawsTemplate extends Stack {
   latestVersion: string;
   clusterName: string | null;
   efsId: string | boolean;
+  props: LaunchProps;
 
   constructor(scope: Construct, id: string, props: LaunchProps) {
     super(scope, id, props);
+    this.props = props;
 
-    this.node.addInfo(`Security group: ${props.ec2SecurityGroup.ref}`);
-    this.clusterName = props.clusterName;
-
-    this.efsId = typeof props.efsId !== "undefined" ? props.efsId : false;
-
-    for (let i = 0; i < props.config.length; i++) {
-      const templateConfig = props.config[i];
-
-      let image: EcsOptimizedImage;
-      let imageId: string = "";
-
-      // @todo enable other launch template types
-      if (templateConfig.type == "ecs") {
-        image = EcsOptimizedImage.amazonLinux2(AmiHardwareType.STANDARD);
-        imageId = image.getImage(this).imageId;
-
-        const instanceType =
-          typeof templateConfig.instanceType !== "undefined"
-            ? templateConfig.instanceType
-            : "t3a.small";
-
-        const keyName = this.node.tryGetContext("ec2Key");
-
-        // Assemble our userdata.
-        const rawData = UserData.forLinux();
-        const commands = this.buildUserData();
-        rawData.addCommands(...commands);
-        const renderedData = rawData.render();
-        const userData = Fn.base64(renderedData);
-
-        const securityId = props.ec2SecurityGroup.ref;
-
-        this.launchTemplate = new CfnLaunchTemplate(
-          this,
-          `baws-template-${id}-${i}`,
-          {
-            launchTemplateName: props.config[i].Name,
-            launchTemplateData: {
-              imageId,
-              instanceType,
-              keyName,
-              securityGroupIds: [securityId],
-              userData,
-              iamInstanceProfile: {
-                arn: props.instanceRole
-              },
-              blockDeviceMappings: [
-                {
-                  deviceName: "/dev/xvda",
-                  ebs: {
-                    deleteOnTermination: true,
-                    encrypted: false,
-                    volumeSize: props.config[i].storageSize
-                  }
-                }
-              ],
-              tagSpecifications: [
-                {
-                  resourceType: "instance",
-                  tags: [
-                    {
-                      key: "Name",
-                      value: props.config[i].instanceName
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        );
-
-        this.templateId = this.launchTemplate.ref;
-        this.latestVersion = this.launchTemplate.attrLatestVersionNumber;
+    if (typeof props.config !== "undefined") {
+      for (let i = 0; i < props.config.length; i++) {
+        this.createLaunchTemplate(props.config[i]);
       }
     }
   }
+
+  public createLaunchTemplate = (configItem: configItem): void => {
+    this.clusterName = this.props.clusterName;
+    this.efsId =
+      typeof this.props.efsId !== "undefined" ? this.props.efsId : false;
+
+    let image: EcsOptimizedImage;
+    let imageId: string = "";
+
+    // @todo enable other launch template types
+    if (configItem.type == "ecs") {
+      image = EcsOptimizedImage.amazonLinux2(AmiHardwareType.STANDARD);
+      imageId = image.getImage(this).imageId;
+
+      const instanceType =
+        typeof configItem.instanceType !== "undefined"
+          ? configItem.instanceType
+          : "t3a.small";
+
+      const keyName = this.node.tryGetContext("ec2Key");
+
+      // Assemble our userdata.
+      const rawData = UserData.forLinux();
+      const commands = this.buildUserData();
+      rawData.addCommands(...commands);
+      const renderedData = rawData.render();
+      const userData = Fn.base64(renderedData);
+
+      const securityId = this.props.ec2SecurityGroup;
+
+      this.launchTemplate = new CfnLaunchTemplate(
+        this,
+        `baws-template-${configItem.name}`,
+        {
+          launchTemplateName: configItem.name,
+          launchTemplateData: {
+            imageId,
+            instanceType,
+            keyName,
+            securityGroupIds: [securityId],
+            userData,
+            iamInstanceProfile: {
+              arn: this.props.instanceRole
+            },
+            blockDeviceMappings: [
+              {
+                deviceName: "/dev/xvda",
+                ebs: {
+                  deleteOnTermination: true,
+                  encrypted: false,
+                  volumeSize: configItem.storageSize
+                }
+              }
+            ],
+            tagSpecifications: [
+              {
+                resourceType: "instance",
+                tags: [
+                  {
+                    key: "Name",
+                    value: configItem.instanceName
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      );
+
+      this.templateId = this.launchTemplate.ref;
+      this.latestVersion = this.launchTemplate.attrLatestVersionNumber;
+    }
+  };
 
   private buildUserData = (): string[] => {
     const commands: string[] = [];
@@ -129,12 +131,21 @@ export class BawsTemplate extends Stack {
   };
 }
 
+interface configItem {
+  name: string;
+  type: string;
+  instanceName: string;
+  instanceType: string;
+  storageSize: number;
+  instanceSize: string;
+}
+
 interface LaunchProps extends StackProps {
   vpcId: string;
   clusterName: string;
   efsId?: string;
   instanceRole: string;
   storageSize?: string;
-  ec2SecurityGroup: CfnSecurityGroup;
+  ec2SecurityGroup: string;
   config: any[];
 }
