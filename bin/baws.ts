@@ -120,23 +120,6 @@ const alb = new BawsALB(app, "alb", {
 });
 alb.addDependency(routeResource);
 
-// Our autoscaling group for cluster instances.
-// Adjust settings in config.yml.
-
-const scaling = new BawsScaling(app, "scaling", {
-  env: defaultEnv,
-  vpcId: vpc.vpcId,
-  efsId: efs.efsId,
-  ec2SecurityGroup: security.ec2.ref,
-  instanceRole: roles.ec2InstanceRef,
-  clusterName: cluster.clusterName,
-  publicSubnets: vpc.publicSubnets,
-  config: config.scaling,
-});
-scaling.addDependency(security);
-scaling.addDependency(efs);
-scaling.addDependency(alb);
-
 
 // Each one of our pipelines needs a repo, created here.
 // Github support is on the roadmap.
@@ -201,7 +184,23 @@ const services = new BawsServices(app, "services", {
 });
 services.addDependency(cluster);
 services.addDependency(tasks);
-services.addDependency(scaling);
+services.addDependency(alb);
+
+// Our autoscaling group for cluster instances.
+// Adjust settings in config.yml.
+const scaling = new BawsScaling(app, "scaling", {
+  env: defaultEnv,
+  vpcId: vpc.vpcId,
+  efsId: efs.efsId,
+  targetArns: services.targetRefs,
+  ec2SecurityGroup: security.ec2.ref,
+  instanceRole: roles.ec2InstanceRef,
+  clusterName: cluster.clusterName,
+  publicSubnets: vpc.publicSubnets,
+  config: config.scaling,
+});
+scaling.addDependency(security);
+scaling.addDependency(efs);
 
 
 // Pipelines make sure we have a mechanism for deploying apps from a repo.

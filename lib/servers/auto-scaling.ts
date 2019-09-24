@@ -35,6 +35,7 @@ export class BawsScaling extends Stack {
         version: launchTemplate.attrLatestVersionNumber,
         launchTemplateId: launchTemplate.ref
       },
+      targetGroupArns: this.props.targetArns,
       vpcZoneIdentifier
     });
   }
@@ -136,6 +137,7 @@ export class BawsScaling extends Stack {
 interface ScalingProps extends StackProps {
   vpcId: string;
   efsId?: string;
+  targetArns: string[];
   clusterName: string;
   publicSubnets: CfnSubnet[];
   instanceRole: string;

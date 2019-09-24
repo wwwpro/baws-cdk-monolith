@@ -15,12 +15,9 @@ import { YamlConfig } from "../baws/yaml-dir";
 import { CfnRole } from "@aws-cdk/aws-iam";
 
 export class BawsServices extends Stack {
-  task: CfnTaskDefinition;
-  target: CfnTargetGroup;
-  service: CfnService;
-  container: ContainerDefinition;
+  
+  targetRefs: string[];
   counter: number;
-  listenerRef: string;
 
   props: ServicesProps;
 
@@ -29,8 +26,6 @@ export class BawsServices extends Stack {
 
     this.props = props;
     this.counter = 1;
-
-    this.listenerRef = props.listener.ref;
 
     // Pull in config files from directory.
     if (typeof props.configDir !== "undefined") {
@@ -164,6 +159,8 @@ export class BawsServices extends Stack {
         vpcId: this.props.vpcId
       }
     );
+    
+    this.targetRefs.push(target.ref);
 
     const listeners:string[] = configItem.listeners[0].hosts;
     const listenerRule = new CfnListenerRule(
@@ -210,7 +207,6 @@ export class BawsServices extends Stack {
     //service.addDependsOn(listenerRule);
     service.addDependsOn(target);
     this.counter++;
-
     
   };
 
