@@ -16,7 +16,7 @@ import { CfnRole } from "@aws-cdk/aws-iam";
 
 export class BawsServices extends Stack {
   
-  targetRefs: string[];
+  targetRefs: string[] = [];
   counter: number;
 
   props: ServicesProps;
