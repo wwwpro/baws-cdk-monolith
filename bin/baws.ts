@@ -169,6 +169,21 @@ const tasks = new BawsTasks(app, "tasks", {
 tasks.addDependency(roles);
 tasks.addDependency(ecr);
 
+// Our autoscaling group for cluster instances.
+// Adjust settings in config.yml.
+const scaling = new BawsScaling(app, "scaling", {
+  env: defaultEnv,
+  vpcId: vpc.vpcId,
+  efsId: efs.efsId,
+  ec2SecurityGroup: security.ec2.ref,
+  instanceRole: roles.ec2InstanceRef,
+  clusterName: cluster.clusterName,
+  publicSubnets: vpc.publicSubnets,
+  config: config.scaling,
+});
+scaling.addDependency(security);
+scaling.addDependency(efs);
+
 // Effectively the "app" which gets deployed to the servers
 // created in by the scaling stack.
 const services = new BawsServices(app, "services", {
@@ -182,25 +197,12 @@ const services = new BawsServices(app, "services", {
   taskRole: roles.ecsTask,
   vpcId: vpc.vpcId
 });
+services.addDependency(scaling);
 services.addDependency(cluster);
 services.addDependency(tasks);
 services.addDependency(alb);
 
-// Our autoscaling group for cluster instances.
-// Adjust settings in config.yml.
-const scaling = new BawsScaling(app, "scaling", {
-  env: defaultEnv,
-  vpcId: vpc.vpcId,
-  efsId: efs.efsId,
-  targetArns: services.targetRefs,
-  ec2SecurityGroup: security.ec2.ref,
-  instanceRole: roles.ec2InstanceRef,
-  clusterName: cluster.clusterName,
-  publicSubnets: vpc.publicSubnets,
-  config: config.scaling,
-});
-scaling.addDependency(security);
-scaling.addDependency(efs);
+
 
 
 // Pipelines make sure we have a mechanism for deploying apps from a repo.
