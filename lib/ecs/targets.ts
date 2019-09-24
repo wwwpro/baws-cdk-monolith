@@ -3,7 +3,7 @@ import { CfnTargetGroup } from "@aws-cdk/aws-elasticloadbalancingv2";
 import { YamlConfig } from "../baws/yaml-dir";
 
 export class BawsTargets extends Stack {
-  targetMap: Map<string, string>;
+  targetMap: Map<string, string> = new Map;
   targetArns: string[] = [];
   props: TargetProps;
 
@@ -44,6 +44,7 @@ export class BawsTargets extends Stack {
       vpcId: this.props.vpcId,
     });
     this.targetArns.push(target.ref);
+    this.targetMap.set(configItem.name, target.ref);
   }
 }
 

@@ -15,7 +15,6 @@ import { YamlConfig } from "../baws/yaml-dir";
 import { CfnRole } from "@aws-cdk/aws-iam";
 
 export class BawsServices extends Stack {
-  
   targetRefs: string[] = [];
   counter: number;
 
@@ -46,11 +45,10 @@ export class BawsServices extends Stack {
 
   /**
    * This was originally decoupled, but quirks within the CDK seems to force a single,
-   * bundled function. 
-   * 
+   * bundled function.
+   *
    */
-  private createService = (configItem:any): void => {
-    
+  private createService = (configItem: any): void => {
     const logGroupName = `/ecs/${configItem.name}`;
 
     const logGroup = new CfnLogGroup(
@@ -86,12 +84,12 @@ export class BawsServices extends Stack {
       });
     }
 
-    let targetGet:string | undefined = '';
-    let targetRef: string = '';
+    let targetGet: string | undefined = "";
+    let targetRef: string = "";
 
-    if (typeof this.props.targetMap !== 'undefined') {
+    if (typeof this.props.targetMap !== "undefined") {
       targetGet = this.props.targetMap.get(configItem.name);
-      targetRef = (typeof targetGet !== 'undefined')?targetGet:'';
+      targetRef = typeof targetGet !== "undefined" ? targetGet : "";
     }
 
     const task = new CfnTaskDefinition(
@@ -134,7 +132,7 @@ export class BawsServices extends Stack {
     task.addDependsOn(logGroup);
 
     const ecrURI =
-    configItem.createECR === true
+      configItem.createECR === true
         ? Repository.fromRepositoryName(
             this,
             `baws-ecr-lookup-${configItem.name}`,
@@ -144,10 +142,8 @@ export class BawsServices extends Stack {
 
     const containerPort = configItem.containerPort;
     const containerName = configItem.name;
-    
 
-
-    const listeners:string[] = configItem.listeners[0].hosts;
+    const listeners: string[] = configItem.listeners[0].hosts;
     const listenerRule = new CfnListenerRule(
       this,
       `baws-listener-${configItem.name}`,
@@ -170,8 +166,6 @@ export class BawsServices extends Stack {
         priority: this.counter
       }
     );
-    
-    
 
     const service = new CfnService(this, `baws-service-${configItem.name}`, {
       taskDefinition: task.ref,
@@ -190,9 +184,7 @@ export class BawsServices extends Stack {
 
     //service.addDependsOn(listenerRule);
     this.counter++;
-    
   };
-
 }
 
 interface ServicesProps extends StackProps {
@@ -200,7 +192,7 @@ interface ServicesProps extends StackProps {
   configDir?: string;
   executionRole: CfnRole;
   taskRole: CfnRole;
-  targetMap: Map<string,string>
+  targetMap: Map<string, string>;
   albName: string;
   listener: CfnListener;
   clusterName: string;
