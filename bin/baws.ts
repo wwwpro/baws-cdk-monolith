@@ -263,6 +263,7 @@ const full = new BawsPipelines(app, "stack-full", {
   buildRole: roles.build,
   config: config.pipeline
 });
+full.addDependency(scaling);
 full.addDependency(services);
 full.addDependency(commit);
 full.addDependency(cache);
@@ -278,6 +279,7 @@ const standard = new BawsPipelines(app, "stack-standard", {
   buildRole: roles.build,
   config: config.pipeline
 });
+standard.addDependency(scaling);
 standard.addDependency(services);
 standard.addDependency(commit);
 standard.addDependency(rds);
@@ -292,6 +294,7 @@ const min = new BawsPipelines(app, "stack-min", {
   buildRole: roles.build,
   config: config.pipeline
 });
+min.addDependency(scaling);
 min.addDependency(services);
 min.addDependency(commit);
 
