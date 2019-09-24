@@ -36,7 +36,7 @@ export class BawsServices extends Stack {
     if (typeof props.configDir !== "undefined") {
       const configs = YamlConfig.getDirConfigs(props.configDir);
       configs.forEach(item => {
-        //this.createService(item);
+        this.createService(item);
       });
     }
 
@@ -164,7 +164,7 @@ export class BawsServices extends Stack {
         vpcId: this.props.vpcId
       }
     );
-    
+
     const listeners:string[] = configItem.listeners[0].hosts;
     const listenerRule = new CfnListenerRule(
       this,
