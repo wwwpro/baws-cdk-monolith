@@ -86,6 +86,13 @@ export class BawsServices extends Stack {
       });
     }
 
+    let targetGet:string | undefined = '';
+    let targetRef: string = '';
+
+    if (typeof this.props.targetMap !== 'undefined') {
+      targetGet = this.props.targetMap.get(configItem.name);
+      targetRef = (typeof targetGet !== 'undefined')?targetGet:'';
+    }
 
     const task = new CfnTaskDefinition(
       this,
@@ -137,30 +144,8 @@ export class BawsServices extends Stack {
 
     const containerPort = configItem.containerPort;
     const containerName = configItem.name;
-
-    const target = new CfnTargetGroup(
-      this,
-      `baws-target-${configItem.name}`,
-      {
-        name: `${configItem.name}-target`,
-        healthCheckEnabled: true,
-        healthCheckIntervalSeconds: 30,
-        healthCheckPath: "/",
-        healthCheckProtocol: "HTTP",
-        healthCheckTimeoutSeconds: 15,
-        healthyThresholdCount: 2,
-        matcher: { httpCode: "200,302" },
-        port:
-          typeof configItem.containerPort !== "undefined"
-            ? configItem.containerPort
-            : 80,
-        protocol: "HTTP",
-        unhealthyThresholdCount: 5,
-        vpcId: this.props.vpcId
-      }
-    );
     
-    this.targetRefs.push(target.ref);
+
 
     const listeners:string[] = configItem.listeners[0].hosts;
     const listenerRule = new CfnListenerRule(
@@ -170,7 +155,7 @@ export class BawsServices extends Stack {
         actions: [
           {
             type: "forward",
-            targetGroupArn: target.ref
+            targetGroupArn: targetRef
           }
         ],
         conditions: [
@@ -185,7 +170,6 @@ export class BawsServices extends Stack {
         priority: this.counter
       }
     );
-    listenerRule.addDependsOn(target);
     
     
 
@@ -196,7 +180,7 @@ export class BawsServices extends Stack {
         {
           containerPort,
           containerName,
-          targetGroupArn: target.ref
+          targetGroupArn: targetRef
         }
       ],
       cluster: this.props.clusterName,
@@ -205,7 +189,6 @@ export class BawsServices extends Stack {
     });
 
     //service.addDependsOn(listenerRule);
-    service.addDependsOn(target);
     this.counter++;
     
   };
@@ -217,6 +200,7 @@ interface ServicesProps extends StackProps {
   configDir?: string;
   executionRole: CfnRole;
   taskRole: CfnRole;
+  targetMap: Map<string,string>
   albName: string;
   listener: CfnListener;
   clusterName: string;

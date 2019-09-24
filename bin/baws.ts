@@ -3,7 +3,7 @@ import "source-map-support/register";
 import { App } from "@aws-cdk/core";
 import { BawsVPC } from "../lib/vpc/cnfvpc";
 import { BawsRouteResource } from "../lib/vpc/routeResource";
-import { BawsScaling } from "../lib/servers/auto-scaling";
+import { BawsScaling } from "../lib/servers/scaling";
 import { BawsCluster } from "../lib/ecs/cluster";
 import { BawsEFS } from "../lib/storage/efs";
 import { BawsTasks } from "../lib/ecs/tasks";
@@ -23,6 +23,7 @@ import { BawsNotifyFunction } from "../lib/lambda/notifications";
 import { BawsEvents } from "../lib/cloudwatch/events";
 
 import { YamlConfig } from "../lib/baws/yaml-dir";
+import { BawsTargets } from "../lib/ecs/targets";
 
 let config: any;
 const app = new App();
@@ -169,12 +170,20 @@ const tasks = new BawsTasks(app, "tasks", {
 tasks.addDependency(roles);
 tasks.addDependency(ecr);
 
+const targets = new BawsTargets(app, 'targets', {
+  env:defaultEnv,
+  vpcId: vpc.vpcId,
+  config:config.ecs.services,
+  configDir: config.ecs.configDir,
+});
+
 // Our autoscaling group for cluster instances.
 // Adjust settings in config.yml.
 const scaling = new BawsScaling(app, "scaling", {
   env: defaultEnv,
   vpcId: vpc.vpcId,
   efsId: efs.efsId,
+  targetArns: targets.targetArns,
   ec2SecurityGroup: security.ec2.ref,
   instanceRole: roles.ec2InstanceRef,
   clusterName: cluster.clusterName,
@@ -190,6 +199,7 @@ const services = new BawsServices(app, "services", {
   env: defaultEnv,
   config: config.ecs.services,
   configDir: config.ecs.configDir,
+  targetMap: targets.targetMap,
   listener: alb.listener,
   albName: alb.albName,
   clusterName: cluster.clusterName,
