@@ -1,6 +1,0 @@
-name: example-app
-taskNameReference: example-app
-desiredCount: 4
-listeners:
-  - host: example.com
-  - host: "*.example.com"

@@ -191,11 +191,11 @@ tasks.addDependency(ecr);
 const services = new BawsServices(app, "services", {
   env: defaultEnv,
   config: config.ecs.services,
-  configDir: config.ecs.servicesDir,
-  tasks: tasks.taskMap,
-  listenerArn: alb.listener.ref,
+  listener: alb.listener,
   albName: alb.albName,
   clusterName: cluster.clusterName,
+  executionRole: roles.ecsExecution,
+  taskRole: roles.ecsTask,
   vpcId: vpc.vpcId
 });
 services.addDependency(cluster);

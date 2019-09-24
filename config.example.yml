@@ -4,7 +4,6 @@ vpc:
   baseAddress: "10.0.0.0"
   baseCidrSize: "24"
 s3:
-  # filesDir: ./config/s3
   buckets:
     # You may make as many buckets as you like but you must create at least one of each.
     # One assets, one artifacts, and one logs. The first of each created will be used for 
@@ -21,7 +20,6 @@ s3:
       type: logs
       addUniquId: true
 cdn:
-  # filesDir: ./config/cdn
   distributions:
     - name: baws cdn
       enabled: true
@@ -47,14 +45,8 @@ efs:
   name: baws efs
   encrypted: false
 launchTemplates:
-  - name: baws-ecs-template
-    instanceName: baws auto
-    type: ecs
-    # Available types here: 
-    # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
-    instanceType: t3a.small
-    storageSize: 50
-    efs: true
+  # @todo implement bastion server creation.
+  # Launch template creation for ecs has moved into scaling.
   - name: baws-bastion-instance
     instanceName: baws bastion
     type: bastion
@@ -81,7 +73,6 @@ scaling:
     storageSize: 50
     efs: true
 rds:
-  # filesDir: ./config/rds
   clusterName: baws-cluster
   # `aurora` is the most compatible and feature complete version of Aurora.
   # Other available options detailed here: 
@@ -122,32 +113,48 @@ ecs:
   clusterName: baws-cluster
   # Example files included in the corresponding directories below. Uncomment to use them.
   # If task path is uncommented, both tasks defined in the directory files, and the tasks
-  # defined below will be created. Delete either the `tasksDir` or the tasks object below
-  # if you don't want them to be created.
+  # defined below will be created. Either comment the `tasksDir` or delete the tasks object below,
+  # if you don't want corresponding tasks or servics to be created.
   
-  # tasksDir: config/ecs/tasks
-  # servicesDir: config/ecs/services
-  tasks:
+  # configDir: config/ecs/tasks
+  services:
     - name: baws-app
+      # Public dockerhub containers only need the pull location. 
+      # Official containers, such as nginx, only need the name.
+      # Typically, nginx is used as a generic to get the service to pass healthchecks. 
+      imageURI: nginx
+      # To disable the service, set this to 0.
+      desiredCount: 4
+      listeners:
+      # Only one host condition is currently supported
+        - condition:
+          hosts: 
+          - "*.example.com"
+          - example.com
       createECR: true
       type: ec2
-      logRegion: us-east-1
-      hardMemoryLimit: 1024
+      # The amount reserved for your app. If this is too big, and your server doesn't have enough space,
+      # it will not be deployed. Ideally, make as small as possible, and deploy more instances with autoscaling.
       softMemoryLimit: 256
+      # Your container is allowed to go over its soft limit, if avaialble. If it hits hard limit, though,
+      # the container will be terminated and replaced. 
+      hardMemoryLimit: 1024
+      cpuUnits: 256
       hostPort: 0
       containerPort: 80
-      cpuUnits: 256
-      # values passed directly to the container
+      logRegion: us-east-1
+      # Values passed directly to the container
       variables:
         # NGINX_ENABLED and WEBROOT are applicable if you're using baws-nginx-* containers. 
         # drupal | wordpress | default
         # NGINX_ENABLED: drupal
         # WEBROOT: web
-      # values retreived from the parameter store
+      # params are values retreived from the parameter store
       # Underscored values listed here, for instance db_name, db_user, db_host must be created 
-      # in the parameter store before using them.
+      # in the parameter store before using them. (Future baws tools will simplify this process)
       # Uncomment values according to usage.
-      # DB_HOST and DB_HOST_RO values can match the value created `rds.dbHostParamName`
+      # DB_HOST and DB_HOST_RO values can match the value created `rds.dbHostParamName` if you're
+      # creating an RDS with this CDK.
       params:
         # DB_HOST: db-host
         # DB_HOST_RO: db-host-ro
@@ -170,13 +177,7 @@ ecs:
         # PRIVATE: /var/www/html/private
         # WordPress
         # EFS: /var/www/html/web/sites/plugins/uploads
-  services:
-    - name: baws-service
-      taskNameReference: baws-app
-      desiredCount: 4
-      listeners:
-        - host: example.com
-        - host: "*.example.com"
+      
 pipeline:
   # This name will be used to create a bucket, with a domain compiled from
   # the domain name listed in cdk.json
