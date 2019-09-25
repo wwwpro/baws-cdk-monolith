@@ -2,10 +2,10 @@ name: example-app
 desiredCount: 4
 imageURI: nginx
 listeners:
-  - host: example.com
-  - host: "*.example.com"
-  # - port: 443
-  # - order: 1
+  - condition: host-header
+    hosts:
+    - "*.example.com"
+    - example.com
 createECR: true
 type: ec2
 hardMemoryLimit: 1024

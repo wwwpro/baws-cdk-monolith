@@ -173,7 +173,7 @@ tasks.addDependency(ecr);
 const targets = new BawsTargets(app, 'targets', {
   env:defaultEnv,
   vpcId: vpc.vpcId,
-  config:config.ecs.services,
+  config:config.ecs,
   configDir: config.ecs.configDir,
 });
 
