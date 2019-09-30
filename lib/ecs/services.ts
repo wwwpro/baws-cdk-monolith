@@ -2,62 +2,73 @@ import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import {
   ContainerDefinition,
   CfnTaskDefinition,
-  CfnService
+  CfnService,
+  CfnServiceProps
 } from "@aws-cdk/aws-ecs";
 import {
-  CfnTargetGroup,
-  CfnListenerRule,
-  CfnListener
+  CfnListener,
+  CfnListenerRuleProps
 } from "@aws-cdk/aws-elasticloadbalancingv2";
-import { Repository } from "@aws-cdk/aws-ecr";
-import { CfnLogGroup } from "@aws-cdk/aws-logs";
-import { YamlConfig } from "../baws/yaml-dir";
+
 import { CfnRole } from "@aws-cdk/aws-iam";
 
-export class BawsServices extends Stack {
+export class Services {
   targetRefs: string[] = [];
   counter: number;
 
   props: ServicesProps;
 
-  constructor(scope: Construct, id: string, props: ServicesProps) {
-    super(scope, id, props);
+  constructor() {}
 
-    this.props = props;
-    this.counter = 1;
+  public static getServiceProps(configItem: any, props: any): CfnServiceProps {
+    const containerPort = configItem.containerPort;
+    const containerName = configItem.name;
 
-    // Pull in config files from directory.
-    if (typeof props.configDir !== "undefined") {
-      const configs = YamlConfig.getDirConfigs(props.configDir);
-      configs.forEach(item => {
-        this.createService(item);
-      });
-    }
-
-    if (typeof props.config !== "undefined") {
-      // Create any services in the main config file.
-      for (let i = 0; i < props.config.length; i++) {
-        const item = props.config[i];
-        this.createService(item);
-      }
-    }
+    return {
+      taskDefinition: props.taskRef,
+      healthCheckGracePeriodSeconds: 60,
+      loadBalancers: [
+        {
+          containerPort,
+          containerName,
+          targetGroupArn: props.targetRef
+        }
+      ],
+      cluster: props.clusterName,
+      serviceName: configItem.name,
+      desiredCount: configItem.desiredCount
+    };
   }
 
-  /**
-   * This was originally decoupled, but quirks within the CDK seems to force a single,
-   * bundled function.
-   *
-   */
-  private createService = (configItem: any): void => {
-    const logGroupName = `/ecs/${configItem.name}`;
+  public static getHostListenerProps(
+    configItem: any,
+    props: any,
+    priority: number = 1
+  ): CfnListenerRuleProps {
+    const hosts: string[] = configItem.listeners[0].hosts;
 
-    const logGroup = new CfnLogGroup(
-      this,
-      `baws-ecs-log-group-${configItem.name}`,
-      {
-        logGroupName
-      }
-    );
+    return {
+      actions: [
+        {
+          type: "forward",
+          targetGroupArn: props.targetRef
+        }
+      ],
+      conditions: [
+        {
+          field: "host-header",
+          hostHeaderConfig: {
+            values: hosts
+          }
+        }
+      ],
+      listenerArn: props.listenerRef,
+      priority
+    };
+  }
+
+  public static getProps(configItem: any, props: any): void {
+    let counter = 0;
 
     // Now we extract our config values.
     let volumes: CfnTaskDefinition.VolumeProperty[] = [];
@@ -87,104 +98,10 @@ export class BawsServices extends Stack {
     let targetGet: string | undefined = "";
     let targetRef: string = "";
 
-    if (typeof this.props.targetMap !== "undefined") {
-      targetGet = this.props.targetMap.get(configItem.name);
-      targetRef = typeof targetGet !== "undefined" ? targetGet : "";
-    }
-
-    const task = new CfnTaskDefinition(
-      this,
-      `baws-ecs-definition-${configItem.name}`,
-      {
-        family: configItem.name,
-        containerDefinitions: [
-          {
-            name: configItem.name,
-            image: configItem.imageURI,
-            portMappings: [
-              {
-                hostPort: configItem.hostPort,
-                containerPort: configItem.containerPort
-              }
-            ],
-            cpu: configItem.cpuUnits,
-            memoryReservation: configItem.softMemoryLimit,
-            memory: configItem.hardMemoryLimit,
-            environment,
-            secrets,
-            mountPoints,
-            logConfiguration: {
-              logDriver: "awslogs",
-              options: {
-                "awslogs-region": this.region,
-                "awslogs-group": logGroupName,
-                "awslogs-stream-prefix": "ecs"
-              }
-            },
-            essential: true
-          }
-        ],
-        executionRoleArn: this.props.executionRole.ref,
-        volumes
-      }
-    );
-
-    task.addDependsOn(logGroup);
-
-    const ecrURI =
-      configItem.createECR === true
-        ? Repository.fromRepositoryName(
-            this,
-            `baws-ecr-lookup-${configItem.name}`,
-            configItem.name
-          ).repositoryUri
-        : "none";
-
     const containerPort = configItem.containerPort;
     const containerName = configItem.name;
 
-    const listeners: string[] = configItem.listeners[0].hosts;
-    const listenerRule = new CfnListenerRule(
-      this,
-      `baws-listener-${configItem.name}`,
-      {
-        actions: [
-          {
-            type: "forward",
-            targetGroupArn: targetRef
-          }
-        ],
-        conditions: [
-          {
-            field: "host-header",
-            hostHeaderConfig: {
-              values: listeners
-            }
-          }
-        ],
-        listenerArn: this.props.listener.ref,
-        priority: this.counter
-      }
-    );
-
-    const service = new CfnService(this, `baws-service-${configItem.name}`, {
-      taskDefinition: task.ref,
-      healthCheckGracePeriodSeconds: 60,
-      loadBalancers: [
-        {
-          containerPort,
-          containerName,
-          targetGroupArn: targetRef
-        }
-      ],
-      cluster: this.props.clusterName,
-      serviceName: configItem.name,
-      desiredCount: configItem.desiredCount
-    });
-
-    //service.addDependsOn(listenerRule);
-    this.counter++;
-  };
+  }
 }
 
 interface ServicesProps extends StackProps {

@@ -1,60 +1,62 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import {
   CfnDBCluster,
-  CfnDBSubnetGroup,
-  CfnDBInstance,
-  CfnDBClusterParameterGroup
+  CfnDBClusterParameterGroupProps,
+  CfnDBClusterProps,
+  CfnDBInstanceProps
 } from "@aws-cdk/aws-rds";
-import { CfnSecurityGroup, CfnSubnet } from "@aws-cdk/aws-ec2";
-import { StringParameter, IStringParameter } from "@aws-cdk/aws-ssm";
+import { StringParameter } from "@aws-cdk/aws-ssm";
 
-export class BawsRDS extends Stack {
+export class RDS {
   cluster: CfnDBCluster;
 
-  private masterUsername: IStringParameter;
-  private masterUserPassword: IStringParameter;
-  private subnetGroup: CfnDBSubnetGroup;
-  private engine: string;
+  constructor() {}
 
-  constructor(scope: Construct, id: string, props: RDSProps) {
-    super(scope, id, props);
+  public static getDBClusterParamProps(
+    config: any
+  ): CfnDBClusterParameterGroupProps {
+    return {
+      family: config.paramFamily,
+      parameters: {
+        max_allowed_packet: "64000000"
+      },
+      tags: [
+        {
+          key: "Name",
+          value: config.paramGroupName
+        }
+      ],
+      description: "Created by baws cdk."
+    };
+  }
 
-    const config = props.config;
-    const hostName = config.dbHostParamName;
-    const readOnlyHost = config.dbROHostParamName;
+  public static getRdsInstanceProps(
+    config: any,
+    dbSubnetGroupName: string,
+    dbClusterIdentifier: string
+  ): CfnDBInstanceProps[] {
+    let results: CfnDBInstanceProps[] = [];
+    for (let i = 0; i < config.clusterSize; i++) {
+      results.push({
+        engine: config.auroraEngine,
+        dbInstanceIdentifier: `${config.clusterName}-${i}`,
+        dbInstanceClass: config.instanceType,
+        dbSubnetGroupName,
+        autoMinorVersionUpgrade: true,
+        allowMajorVersionUpgrade: true,
+        dbClusterIdentifier
+      });
+    }
+    return results;
+  }
 
-    const subnetIds: string[] =
-      typeof props.publicSubnets !== "undefined"
-        ? Array.from(props.publicSubnets, x => x.ref)
-        : [];
-
-    const dbSubnetGroupName = `baws-${id}-subnet`;
-    this.subnetGroup = new CfnDBSubnetGroup(this, "baws-db-subnet-group", {
-      dbSubnetGroupName,
-      dbSubnetGroupDescription: "Baws subnet for aurora.",
-      subnetIds
-    });
-
-    const paramGroup = new CfnDBClusterParameterGroup(
-      this,
-      "baws-param-group",
-      {
-        family: config.paramFamily,
-        parameters: {
-          max_allowed_packet: "64000000"
-        },
-        tags: [
-          {
-            key: "Name",
-            value: config.paramGroupName
-          }
-        ],
-        description: "Created by baws cdk."
-      }
-    );
-
+  public static getDBClusterProps(
+    app: Construct,
+    config: any,
+    props: ClusterProps,
+  ): CfnDBClusterProps {
     // Set variables for cluster and instance(s).
-    this.engine =
+    const engine =
       typeof config.auroraEngine !== "undefined"
         ? config.auroraEngine
         : "aurora-mysql";
@@ -64,16 +66,16 @@ export class BawsRDS extends Stack {
         ? config.clusterName
         : `baws-cluster`;
 
-    this.masterUsername = StringParameter.fromStringParameterAttributes(
-      this,
+    const masterUsername = StringParameter.fromStringParameterAttributes(
+      app,
       "baws-rds-user-lookup",
       {
         parameterName: config.masterUsernameSSM
       }
     );
 
-    this.masterUserPassword = StringParameter.fromSecureStringParameterAttributes(
-      this,
+    const masterUserPassword = StringParameter.fromSecureStringParameterAttributes(
+      app,
       "baws-rds-pass-lookup",
       {
         parameterName: config.masterPasswordSSM,
@@ -81,52 +83,21 @@ export class BawsRDS extends Stack {
       }
     );
 
-    this.cluster = new CfnDBCluster(this, "baws-rds-cluster", {
+    return {
       dbClusterIdentifier: clusterName,
-      engine: this.engine,
-      dbClusterParameterGroupName: paramGroup.ref,
-      dbSubnetGroupName: this.subnetGroup.dbSubnetGroupName,
+      engine: engine,
+      dbClusterParameterGroupName: props.dbClusterParamGroupName,
+      dbSubnetGroupName: props.dbSubnetGroupName,
       backupRetentionPeriod: config.backupRetention,
-      masterUsername: this.masterUsername.stringValue,
-      masterUserPassword: this.masterUserPassword.stringValue,
-      vpcSecurityGroupIds: [props.securityGroup.ref],
-    });
-    this.cluster.addDependsOn(paramGroup);
-    this.cluster.addDependsOn(this.subnetGroup);
-    
-
-    for (let i = 0; i < config.clusterSize; i++) {
-      
-      const instance = new CfnDBInstance(this, `baws-instance-${i}`, {
-        engine: this.engine,
-        dbInstanceIdentifier: `${config.clusterName}-${i}`,
-        dbInstanceClass: config.instanceType,
-        dbSubnetGroupName: this.subnetGroup.dbSubnetGroupName,
-        autoMinorVersionUpgrade: true,
-        allowMajorVersionUpgrade: true,
-        dbClusterIdentifier: this.cluster.dbClusterIdentifier,
-      });
-      
-      instance.addDependsOn(this.cluster);
-    }
-
-    // Create host endpoints in SSM for container reference.
-    new StringParameter(this, 'baws-db-host', {
-      description: 'Created by baws cdk',
-      parameterName: hostName,
-      stringValue: this.cluster.attrEndpointAddress,
-    });
-
-    new StringParameter(this, 'baws-db-host-read', {
-      description: 'Created by baws cdk',
-      parameterName: readOnlyHost,
-      stringValue: this.cluster.attrReadEndpointAddress,
-    });
+      masterUsername: masterUsername.stringValue,
+      masterUserPassword: masterUserPassword.stringValue,
+      vpcSecurityGroupIds: [props.dbSecurityGroupRef]
+    };
   }
 }
 
-interface RDSProps extends StackProps {
-  securityGroup: CfnSecurityGroup;
-  publicSubnets: CfnSubnet[];
-  config: any;
+interface ClusterProps {
+  dbSecurityGroupRef: string;
+  dbSubnetGroupName: string;
+  dbClusterParamGroupName: string;
 }

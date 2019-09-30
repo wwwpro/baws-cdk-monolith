@@ -178,15 +178,11 @@ ecs:
         # WordPress
         # EFS: /var/www/html/web/sites/plugins/uploads
       
-pipeline:
-  # This name will be used to create a bucket, with a domain compiled from
-  # the domain name listed in cdk.json
-  # configDir: config/pipelines
+codepipeline:
+  # configDir: config/code-pipelines
   pipelines:
-    - type: ecs
-      pipelineName: baws-pipeline
-      # Name of the build project.
-      projectName: baws-build
+    - name: baws-pipeline
+      type: ecs
       #must match repo name used in codecommit.
       repoNameReference: baws-app
       branchToWatch: master
@@ -197,7 +193,7 @@ pipeline:
       # must match `name` under service.name
       clusterNameReference: baws-cluster
 notifications:
-  pipeline:
+  codepipeline:
     functionName: baws-notifications
     pipelineNameReference: baws-pipeline
     # Info on setting up a slack hook here: 

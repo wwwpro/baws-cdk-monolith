@@ -16,18 +16,21 @@ export class YamlConfig {
   public static getDirConfigs(relativeDir: string): any[] {
     let configs: any[] = [];
 
-    try {
-      const dirPath = Path.join(__dirname, `../../${relativeDir}`);
-      const configFiles = FS.readdirSync(dirPath);
-
-      configFiles.forEach(file => {
-        const filePath = Path.join(dirPath, file);
-        const config = Yaml.safeLoad(FS.readFileSync(filePath, "utf-8"));
-        configs.push(config);
-      });
-    } catch (error) {
-      console.log(`Directory read failed: ${error}`);
+    if (typeof relativeDir !== 'undefined') {
+      try {
+        const dirPath = Path.join(__dirname, `../../${relativeDir}`);
+        const configFiles = FS.readdirSync(dirPath);
+  
+        configFiles.forEach(file => {
+          const filePath = Path.join(dirPath, file);
+          const config = Yaml.safeLoad(FS.readFileSync(filePath, "utf-8"));
+          configs.push(config);
+        });
+      } catch (error) {
+        console.log(`Directory read failed: ${error}`);
+      }
     }
+    
 
     return configs;
   }

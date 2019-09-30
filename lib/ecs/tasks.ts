@@ -1,46 +1,18 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
-import { CfnTaskDefinition } from "@aws-cdk/aws-ecs";
+import { CfnTaskDefinition, CfnTaskDefinitionProps } from "@aws-cdk/aws-ecs";
 import { CfnRole } from "@aws-cdk/aws-iam";
 import { Repository } from "@aws-cdk/aws-ecr";
 import { CfnLogGroup } from "@aws-cdk/aws-logs";
 import { YamlConfig } from "../baws/yaml-dir";
 
-export class BawsTasks extends Stack {
+export class Tasks {
   props: TaskProps;
   taskMap: Map<string, TaskInfo>;
 
-  constructor(scope: Construct, id: string, props: TaskProps) {
-    super(scope, id, props);
-    this.props = props;
-    this.taskMap = new Map();
+  constructor() {}
 
-    // Pull in config files from directory, and create them if we got 'em.
-    if (typeof props.configDir !== "undefined") {
-      const configs = YamlConfig.getDirConfigs(props.configDir);
-      configs.forEach(item => {
-        this.createTask(item);
-      });
-    }
-
-    if (typeof props.config !== "undefined") {
-      // Create tasks expressed directly in the config file.
-      for (let i = 0; i < props.config.length; i++) {
-        this.createTask(this.props.config[i]);
-      }
-    }
-  }
-
-  private createTask = (taskConfig: any): CfnTaskDefinition => {
+  public static getTaskProps = (configItem: any, props:any): CfnTaskDefinitionProps => {
     // @todo decouple logs from task.
-    const logGroupName = `/ecs/${taskConfig.name}`;
-
-    const logGroup = new CfnLogGroup(
-      this,
-      `baws-ecs-log-group-${taskConfig.name}`,
-      {
-        logGroupName
-      }
-    );
 
     // Now we extract our config values.
     let volumes: CfnTaskDefinition.VolumeProperty[] = [];
@@ -48,82 +20,61 @@ export class BawsTasks extends Stack {
     let environment: CfnTaskDefinition.KeyValuePairProperty[] = [];
     let mountPoints: CfnTaskDefinition.MountPointProperty[] = [];
 
-    for (let key in taskConfig.volumes) {
-      volumes.push({ name: key, host: taskConfig.volumes[key] });
+    for (let key in configItem.volumes) {
+      volumes.push({ name: key, host: configItem.volumes[key] });
     }
 
-    for (let key in taskConfig.params) {
-      secrets.push({ name: key, valueFrom: taskConfig.params[key] });
+    for (let key in configItem.params) {
+      secrets.push({ name: key, valueFrom: configItem.params[key] });
     }
 
-    for (let key in taskConfig.variables) {
-      environment.push({ name: key, value: taskConfig.variables[key] });
+    for (let key in configItem.variables) {
+      environment.push({ name: key, value: configItem.variables[key] });
     }
 
-    for (let key in taskConfig.mounts) {
+    for (let key in configItem.mounts) {
       mountPoints.push({
         sourceVolume: key,
-        containerPath: taskConfig.mounts[key]
+        containerPath: configItem.mounts[key]
       });
     }
 
     // Our configItem. We use nginx:alpine to start. This is to provide a simple mechanism
     // for returning a 200 code, until we can deploy our actual container to this taskthrough a pipeline.
-    const task = new CfnTaskDefinition(
-      this,
-      `baws-ecs-definition-${taskConfig.name}`,
+    const task:CfnTaskDefinitionProps = 
       {
-        family: taskConfig.name,
+        family: configItem.name,
         containerDefinitions: [
           {
-            name: taskConfig.name,
+            name: configItem.name,
             image: "nginx:alpine",
             portMappings: [
               {
-                hostPort: taskConfig.hostPort,
-                containerPort: taskConfig.containerPort
+                hostPort: configItem.hostPort,
+                containerPort: configItem.containerPort
               }
             ],
-            cpu: taskConfig.cpuUnits,
-            memoryReservation: taskConfig.softMemoryLimit,
-            memory: taskConfig.hardMemoryLimit,
+            cpu: configItem.cpuUnits,
+            memoryReservation: configItem.softMemoryLimit,
+            memory: configItem.hardMemoryLimit,
             environment,
             secrets,
             mountPoints,
             logConfiguration: {
               logDriver: "awslogs",
               options: {
-                "awslogs-region": this.region,
-                "awslogs-group": logGroupName,
+                "awslogs-region": props.region,
+                "awslogs-group": `/ecs/${configItem.name}`,
                 "awslogs-stream-prefix": "ecs"
               }
             },
             essential: true
           }
         ],
-        executionRoleArn: this.props.executionRole.ref,
+        executionRoleArn: props.executionRoleRef,
         volumes
       }
-    );
-
-    task.addDependsOn(logGroup);
-    const ecrURI =
-      taskConfig.createECR === true
-        ? Repository.fromRepositoryName(
-            this,
-            `baws-ecr-lookup-${taskConfig.name}`,
-            taskConfig.name
-          ).repositoryUri
-        : "none";
-
-    this.taskMap.set(taskConfig.name, {
-      containerName: taskConfig.name,
-      containerPort: taskConfig.containerPort,
-      ecrURI,
-      taskRef: task.ref
-    });
-
-    return task;
+      return task;
   };
 }
 

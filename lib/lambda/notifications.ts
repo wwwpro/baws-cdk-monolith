@@ -1,49 +1,40 @@
-import { Construct, Stack, StackProps } from "@aws-cdk/core";
-import { Code, Function, Runtime } from "@aws-cdk/aws-lambda";
+
+import { Code, Function, Runtime, FunctionProps } from "@aws-cdk/aws-lambda";
 import * as path from "path";
 import { Effect, PolicyStatement } from "@aws-cdk/aws-iam";
 
-export class BawsNotifyFunction extends Stack {
+export class NotifyFunction {
   function: Function;
 
-  constructor(scope: Construct, id: string, props: NotifyProps) {
-    super(scope, id, props);
+  constructor() {}
 
-    if (typeof props.config.pipeline.slackChannel !== "undefined") {
-      const slackChannel = props.config.pipeline.slackChannel;
-      const slackURL = props.config.pipeline.slackURL;
-
-      this.function = new Function(this, `baws-notify`, {
-        functionName: props.config.pipeline.functionName,
-        description:
-          "Created by baws cdk to notify approprriate channels, -slack, email or text- when events pipeline or scaling event occur.",
-        runtime: Runtime.NODEJS_10_X,
-        handler: "index.handler",
-        code: Code.fromAsset(path.join(__dirname, "./notify")),
-        environment: {
-          slackChannel,
-          slackURL
-        }
-      });
-
-      const codeCommitPolicy = new PolicyStatement({
-        effect: Effect.ALLOW,
-        resources: [`arn:aws:codecommit:${this.region}*`],
-        actions: [
-          "codecommit:BatchGet*",
-          "codecommit:BatchDescribe*",
-          "codecommit:Get*",
-          "codecommit:Describe*",
-          "codecommit:List*",
-          "codecommit:GitPull"
-        ]
-      });
-
-      this.function.addToRolePolicy(codeCommitPolicy);
-    }
+  public static getFunctionProps(config: any, id:string): FunctionProps {
+    return {
+      functionName: `${config.pipelineFunction}-${id}`,
+      description:
+        "Created by baws cdk to notify approprriate channels, -slack, email or text- when events pipeline or scaling event occur.",
+      runtime: Runtime.NODEJS_10_X,
+      handler: "index.handler",
+      code: Code.fromAsset(path.join(__dirname, "./notify")),
+      environment: {
+        slackChannel: config.slackChannel,
+        slackURL: config.slackURL
+      }
+    };
   }
-}
 
-interface NotifyProps extends StackProps {
-  config: any;
+  public static getNotificationPolicy(region: string):PolicyStatement {
+    return new PolicyStatement({
+      effect: Effect.ALLOW,
+      resources: [`arn:aws:codecommit:${region}*`],
+      actions: [
+        "codecommit:BatchGet*",
+        "codecommit:BatchDescribe*",
+        "codecommit:Get*",
+        "codecommit:Describe*",
+        "codecommit:List*",
+        "codecommit:GitPull"
+      ]
+    });
+  }
 }

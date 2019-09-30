@@ -1,37 +1,13 @@
-import { Construct, Stack, StackProps } from "@aws-cdk/core";
-import { Role, CfnRole, CfnInstanceProfile } from "@aws-cdk/aws-iam";
+import { CfnRoleProps } from "@aws-cdk/aws-iam";
 
-export class BawsRoles extends Stack {
-  public readonly ec2: CfnRole;
-  public readonly pipeline: CfnRole;
-  public readonly build:Role;
-  public readonly ecsTask: CfnRole;
-  public readonly ecsExecution: CfnRole;
-  public readonly deploy: CfnRole;
-
-  ec2InstanceRef: string;
-  ecsExecutionRef: string;
-  ecsTaskRef: string;
-
-
-  constructor(scope: Construct, id: string, props?: StackProps) {
-    super(scope, id, props);
-
-    this.ec2 = this.createEc2Role();
-    this.pipeline = this.createCodePipelineRole();
-
-    this.deploy = this.createDeployRole();
-    this.ecsExecution = this.createEcsExecutionRole();
-    this.ecsTask = this.createEcsTaskRole();
-
-  }
+export class Roles {  
+  
+  constructor() {}
 
   // Ec2 roles provide a server with access to other resources,
   // such as S3, EFS and Dynamodb.
-  private createEc2Role = (): CfnRole => {
-
-    const roleName = 'baws-ec2-profile';
-    const role = new CfnRole(this, "baws-ec2-role", {
+  public static getEc2RoleProps (roleName: string): CfnRoleProps {
+    return ({
       roleName,
       assumeRolePolicyDocument: {
         "Version": "2012-10-17",
@@ -52,22 +28,12 @@ export class BawsRoles extends Stack {
         'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore',
       ]
     });
-
-    const instanceProfile = new CfnInstanceProfile(this, 'baws-ec2-instance-profile', {
-      instanceProfileName: 'baws-instance-profile',
-      roles: [roleName],
-    });
-    instanceProfile.addDependsOn(role);
-
-    this.ec2InstanceRef = instanceProfile.attrArn;
     
-    return role;
   };
 
   // Allows pipeline to access resources such as codecommit and ERC
-  private createCodePipelineRole = (): CfnRole => {
-    const role = new CfnRole(this, "baws-role-code-pipeline", {
-      roleName: "bawsCodePipeline",
+  public static getCodePipelineRoleProps (): CfnRoleProps {
+    return ({
       assumeRolePolicyDocument:{
         "Version": "2012-10-17",
         "Statement": [
@@ -86,13 +52,11 @@ export class BawsRoles extends Stack {
       ]
     });
 
-    return role;
   };
 
   // Allows codedeploy to... deploy.
-  private createDeployRole = ():  CfnRole => {
-
-    const role = new CfnRole(this, 'baws-role-ec2-deploy', {
+  public static getDeployRoleProps (): CfnRoleProps {
+    return ({
       assumeRolePolicyDocument: 
       {
         "Version": "2012-10-17",
@@ -111,13 +75,11 @@ export class BawsRoles extends Stack {
 
       ],
     });
-
-    return role;
   };
 
   // Allows codebuild to... build.
-  private createBuildRole = (): CfnRole => {
-    const role = new CfnRole(this, 'baws-role-code-build',{
+  public static getBuildRoleProps (): CfnRoleProps {
+    return ({
       assumeRolePolicyDocument: {
         "Version": "2012-10-17",
         "Statement": [
@@ -134,12 +96,10 @@ export class BawsRoles extends Stack {
         ''
       ]
     });
-
-    return role;
   };
 
-  private createEcsExecutionRole = (): CfnRole => {
-    const role = new CfnRole(this, "baws-role-ecs-execution", {
+  public static geteEcsExecutionRoleProps (): CfnRoleProps {
+    return ({
       roleName: "bawsEcsExecutionRole",
       assumeRolePolicyDocument: {
         Version: "2012-10-17",
@@ -159,12 +119,10 @@ export class BawsRoles extends Stack {
         "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
       ]
     });
-
-    return role;
   }
 
-  private createEcsTaskRole = (): CfnRole => {
-    const role = new CfnRole(this, "baws-role-ecs-task", {
+  public static getEcsTaskRoleProps (): CfnRoleProps  {
+    return  ({
       roleName: "bawsEcsTaskRole",
       assumeRolePolicyDocument: {
         Version: "2012-10-17",
@@ -180,8 +138,40 @@ export class BawsRoles extends Stack {
         ]
       }
     });
+  }
 
-    return role;
+  public static getRepoWatchRoleProps (pipelineArn:string, id:string): CfnRoleProps {
+    return ({
+      roleName: `baws-codecommit-watcher-${id}`,
+      assumeRolePolicyDocument: {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: {
+              Service: "events.amazonaws.com"
+            },
+            Action: "sts:AssumeRole"
+          }
+        ]
+      },
+      policies: [
+        {
+          policyName: `baws-codecommit-watcher-policy-${id}`,
+          policyDocument: {
+            Version: "2012-10-17",
+            Statement: [
+              {
+                Effect: "Allow",
+                Action: ["codepipeline:StartPipelineExecution"],
+                Resource: [pipelineArn]
+              }
+            ]
+          }
+        }
+      ]
+    });
+
   }
 
 }

@@ -1,36 +1,16 @@
-import { Construct, Stack, Fn, StackProps } from "@aws-cdk/core";
-import { CfnTargetGroup } from "@aws-cdk/aws-elasticloadbalancingv2";
-import { YamlConfig } from "../baws/yaml-dir";
+import { StackProps } from "@aws-cdk/core";
+import { CfnTargetGroupProps } from "@aws-cdk/aws-elasticloadbalancingv2";
 
-export class BawsTargets extends Stack {
+export class Target{
   targetMap: Map<string, string> = new Map;
   targetArns: string[] = [];
   props: TargetProps;
 
-  constructor(scope: Construct, id: string, props: TargetProps) {
-    super(scope, id, props);
+  constructor() {}
 
-    this.props = props;
-
-    // Pull in config files from directory.
-    if (typeof props.configDir !== "undefined") {
-      const configs = YamlConfig.getDirConfigs(props.configDir);
-      configs.forEach(item => {
-        this.createTarget(item);
-      });
-    }
-
-    if (typeof props.config !== "undefined") {
-      // Create any services in the main config file.
-      props.config.forEach((item:any) => {
-        this.createTarget(item);
-      });
-    }
-  }
-
-  private createTarget(configItem: any) {
-
-    const target = new CfnTargetGroup(this, `baws-target-${configItem.name}`, {
+  public static getTargetProps(configItem: any, props: any):CfnTargetGroupProps {
+    return({
+      name: configItem.name,
       healthCheckEnabled: true,
       healthCheckIntervalSeconds: 30,
       healthCheckPath: "/",
@@ -41,10 +21,8 @@ export class BawsTargets extends Stack {
       port: 80,
       protocol: "HTTP",
       unhealthyThresholdCount: 5,
-      vpcId: this.props.vpcId,
+      vpcId: props.vpcId,
     });
-    this.targetArns.push(target.ref);
-    this.targetMap.set(configItem.name, target.ref);
   }
 }
 

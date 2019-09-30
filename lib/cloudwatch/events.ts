@@ -1,32 +1,18 @@
-import { Construct, Stack, StackProps } from "@aws-cdk/core";
-import { Rule, RuleTargetInput, CfnRule } from "@aws-cdk/aws-events";
-import { Function, IFunction, CfnPermission } from "@aws-cdk/aws-lambda";
-import { LambdaFunction } from "@aws-cdk/aws-events-targets";
+import { CfnRule, CfnRuleProps } from "@aws-cdk/aws-events";
+import { CfnPermissionProps } from "@aws-cdk/aws-lambda";
+export class Events {
+  constructor() {}
 
-export class BawsEvents extends Stack {
-  private props: EventProps;
-
-  constructor(scope: Construct, id: string, props: EventProps) {
-    super(scope, id, props);
-
-    this.props = props;
-
-    this.createCommitRule();
-    this.createBuildRule();
-    this.createECSRule();
-  }
-
-  private createCommitRule = (): CfnRule => {
-    const rule = new CfnRule(this, "baws-rules-commit", {
-      name: "baws-commit-watcher",
+  public static getCommitRuleProps(lambdaArn:string, id:string ): CfnRuleProps {
+    return {
+      name: `baws-commit-watcher-${id}`,
       description: "Created by baws CDK to watch code commit actions.",
       eventPattern: {
         source: ["aws.codecommit"],
-        "detail-type": ["CodeCommit Repository State Change"]
       },
       targets: [
         {
-          arn: this.props.lambdaTargetArn,
+          arn: lambdaArn,
           id: "baws-commit-notify",
           inputTransformer: {
             inputPathsMap: {
@@ -41,26 +27,12 @@ export class BawsEvents extends Stack {
           }
         }
       ]
-    });
+    };
+  }
 
-    const permission = new CfnPermission(
-      this,
-      "baws-rules-commit-function-permission",
-      {
-        action: "lambda:InvokeFunction",
-        functionName: this.props.lambdaTargetArn,
-        principal: "events.amazonaws.com",
-        sourceArn: rule.attrArn
-      }
-    );
-    permission.addDependsOn(rule);
-
-    return rule;
-  };
-
-  private createBuildRule = (): CfnRule => {
-    const rule = new CfnRule(this, "baws-rules-build", {
-      name: "baws-build-watcher",
+  public static getBuildRuleProps(lambdaArn: string, id:string): CfnRuleProps {
+    return {
+      name: `baws-build-watcher-${id}`,
       description: "Created by baws CDK to watch build events.",
       eventPattern: {
         source: ["aws.codebuild"],
@@ -71,7 +43,7 @@ export class BawsEvents extends Stack {
       },
       targets: [
         {
-          arn: this.props.lambdaTargetArn,
+          arn: lambdaArn,
           id: "baws-build-notify",
           inputTransformer: {
             inputPathsMap: {
@@ -85,26 +57,12 @@ export class BawsEvents extends Stack {
           }
         }
       ]
-    });
+    };
+  }
 
-    const permission = new CfnPermission(
-      this,
-      "baws-rules-build-function-permission",
-      {
-        action: "lambda:InvokeFunction",
-        functionName: this.props.lambdaTargetArn,
-        principal: "events.amazonaws.com",
-        sourceArn: rule.attrArn
-      }
-    );
-    permission.addDependsOn(rule);
-
-    return rule;
-  };
-
-  private createECSRule = (): CfnRule => {
-    const rule = new CfnRule(this, "baws-rules-ecs", {
-      name: "baws-build-watcher",
+  public static getEcsRuleProps(lambdaArn: string, id:string): CfnRuleProps {
+    return {
+      name: `baws-ecs-watcher-${id}`,
       description: "Created by baws CDK to watch build events.",
       eventPattern: {
         source: ["aws.ecs"],
@@ -112,7 +70,7 @@ export class BawsEvents extends Stack {
       },
       targets: [
         {
-          arn: this.props.lambdaTargetArn,
+          arn: lambdaArn,
           id: "baws-build-notify",
           inputTransformer: {
             inputPathsMap: {
@@ -127,24 +85,50 @@ export class BawsEvents extends Stack {
           }
         }
       ]
-    });
+    };
+  }
 
-    const permission = new CfnPermission(
-      this,
-      "baws-rules-ecs-function-permission",
-      {
-        action: "lambda:InvokeFunction",
-        functionName: this.props.lambdaTargetArn,
-        principal: "events.amazonaws.com",
-        sourceArn: rule.attrArn
+  public static getPipelineWatcherProps (props: PipelineWatcherProps):CfnRuleProps {
+    return ({
+      name: `baws-repo-watchter-${props.id}`,
+      targets: [
+        {
+          arn: props.pipelineArn,
+          id: "CodePipeline",
+          roleArn: props.roleArn
+        }
+      ],
+      eventPattern: {
+        source: ["aws.codecommit"],
+        "detail-type": ["CodeCommit Repository State Change"],
+        resources: [`${props.repoArn}`],
+        detail: {
+          event: ["referenceCreated", "referenceUpdated"],
+          referenceType: ["branch"],
+          referenceName: [props.branchToWatch]
+        }
       }
-    );
-    permission.addDependsOn(rule);
+    });
+  }
 
-    return rule;
-  };
+  public static getNotifyPermission(
+    lambdaArn: string,
+    rule: CfnRule
+  ): CfnPermissionProps {
+    return {
+      action: "lambda:InvokeFunction",
+      functionName: lambdaArn,
+      principal: "events.amazonaws.com",
+      sourceArn: rule.attrArn
+    };
+  }
+
 }
 
-interface EventProps extends StackProps {
-  lambdaTargetArn: string;
+interface PipelineWatcherProps {
+  id: string;
+  pipelineArn: string;
+  roleArn: string;
+  repoArn: string;
+  branchToWatch: string;
 }

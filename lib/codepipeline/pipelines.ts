@@ -1,14 +1,11 @@
-import { Stack, Construct, StackProps } from "@aws-cdk/core";
-import { CfnPipeline, ActionCategory } from "@aws-cdk/aws-codepipeline";
+import { StackProps } from "@aws-cdk/core";
+import { CfnPipeline, ActionCategory, CfnPipelineProps } from "@aws-cdk/aws-codepipeline";
 import { CfnBucket } from "@aws-cdk/aws-s3";
-import { Role, CfnRole } from "@aws-cdk/aws-iam";
-import { CfnProject } from "@aws-cdk/aws-codebuild";
-import { CfnRule } from "@aws-cdk/aws-events";
-import { CfnLogGroup } from "@aws-cdk/aws-logs";
+import { Role, CfnRole, CfnRoleProps } from "@aws-cdk/aws-iam";
+import { CfnProject, CfnProjectProps } from "@aws-cdk/aws-codebuild";
 import { TaskInfo } from "../ecs/tasks";
-import { YamlConfig } from "../baws/yaml-dir";
 
-export class BawsPipelines extends Stack {
+export class CodePipeline {
   private bucket: CfnBucket;
 
   id: string;
@@ -21,130 +18,68 @@ export class BawsPipelines extends Stack {
   props: pipelineConfig;
 
   // And here we... go...
-  constructor(scope: Construct, id: string, props: pipelineConfig) {
-    super(scope, id, props);
+  constructor() {}
 
-    this.props = props;
-    this.config = props.config;
-    this.id = id;
-
-    this.bucketName =
-      typeof props.bucket.bucketName !== "undefined"
-        ? props.bucket.bucketName
-        : "";
-
-    // Pull in config files from directory, and create them if we got 'em.
-    if (typeof props.configDir !== "undefined") {
-      const configs = YamlConfig.getDirConfigs(props.configDir);
-      configs.forEach(item => {
-        this.createPipeline(item);
-      });
-    }
-
-    if (typeof this.config.pipelines !== "undefined") {
-      // Create all of our pipelines.
-      for (let i = 0; i < this.config.pipelines.length; i++) {
-        this.createPipeline(this.config.pipelines[i]);
-      }
-    }
+  public getCodePipelineProps = (configItem: any, props: PipelineProps):CfnPipelineProps => {
+    const projectName = `${configItem.name}-build`;
+    return ({
+      roleArn: props.pipelineRole.attrArn,
+      name: configItem.name,
+      artifactStore: {
+        type: "S3",
+        location: props.bucketName
+      },
+      stages: [
+        this.getCodeCommitSource(
+          configItem.repoNameReference,
+          configItem.branchToWatch
+        ),
+        this.getBuildStage(projectName),
+        this.getECSDeploy(
+          configItem.clusterNameReference,
+          configItem.serviceNameReference
+        )
+      ]
+    });
   }
 
-  private createPipeline = (pipelineConfig: any) => {
-    this.pipelineName = pipelineConfig.pipelineName;
-    const projectName = `${this.pipelineName}-build`;
-
-    const taskName: string =
-      typeof pipelineConfig.taskNameReference !== "undefined"
-        ? pipelineConfig.taskNameReference
-        : "undefined";
-    const taskMap: TaskInfo | undefined = this.props.taskMap.get(taskName);
-    const taskURI =
-      typeof taskMap !== "undefined" ? taskMap.ecrURI : "undefined";
-    const codeBuildRole = this.createCodeBuildRole();
-
-    const logGroup = new CfnLogGroup(
-      this,
-      `baws-pipeline-log-group-${this.pipelineName}`,
+  public getBuildProps = (props: BuildProps ):CfnProjectProps => {
+    let environmentVariables:CfnProject.EnvironmentVariableProperty[] = [];
+    if (typeof props.taskName !== 'undefined' && typeof props.taskURI !== 'undefined') {
+      environmentVariables = [{
+        name: "CONTAINER_NAME",
+        value: props.taskName
+      },
       {
-        logGroupName: `/codebuild/${this.pipelineName}`
-      }
-    );
+        name: "REPOSITORY_URI",
+        value: props.taskURI
+      }];
+    }
 
-    const cfnProject = new CfnProject(
-      this,
-      `baws-build-project-${this.pipelineName}`,
-      {
-        name: `${this.pipelineName}-build`,
-        artifacts: {
-          type: "CODEPIPELINE"
-        },
-        source: {
-          type: "CODEPIPELINE"
-        },
-        logsConfig: {
-          cloudWatchLogs: {
-            status: "ENABLED",
-            groupName: `codebuild/${this.pipelineName}`
-          }
-        },
-        environment: {
-          computeType: "BUILD_GENERAL1_SMALL",
-          image: "aws/codebuild/standard:2.0",
-          privilegedMode: true,
-          type: "LINUX_CONTAINER",
-          environmentVariables: [
-            {
-              name: "CONTAINER_NAME",
-              value: taskName
-            },
-            {
-              name: "REPOSITORY_URI",
-              value: taskURI
-            }
-          ]
-        },
-        serviceRole: codeBuildRole.attrArn
-      }
-    );
-
-    cfnProject.addDependsOn(codeBuildRole);
-    cfnProject.addDependsOn(logGroup);
-
-    const pipelineRole = this.createPipelineRole();
-
-    // Create our pipelines
-    const pipeline = new CfnPipeline(
-      this,
-      `baws-pipeline-${this.pipelineName}`,
-      {
-        roleArn: pipelineRole.attrArn,
-        name: this.pipelineName,
-        artifactStore: {
-          type: "S3",
-          location: this.bucketName
-        },
-        stages: [
-          this.getCodeCommitSource(
-            pipelineConfig.repoNameReference,
-            pipelineConfig.branchToWatch
-          ),
-          this.getBuildStage(projectName),
-          this.getECSDeploy(
-            pipelineConfig.clusterNameReference,
-            pipelineConfig.serviceNameReference
-          )
-        ]
-      }
-    );
-
-    pipeline.addDependsOn(pipelineRole);
-    pipeline.addDependsOn(cfnProject);
-
-    const pipelineArn = `arn:aws:codepipeline:${this.region}:${this.account}:${this.pipelineName}`;
-    const repoArn = `arn:aws:codecommit:${this.region}:${this.account}:${pipelineConfig.repoNameReference}`;
-
-    this.createRepoEvent(pipelineArn, repoArn, pipelineConfig.branchToWatch);
-  };
+    return({
+      name: props.name,
+      artifacts: {
+        type: "CODEPIPELINE"
+      },
+      source: {
+        type: "CODEPIPELINE"
+      },
+      logsConfig: {
+        cloudWatchLogs: {
+          status: "ENABLED",
+          groupName: `codebuild/${props.name}`
+        }
+      },
+      environment: {
+        computeType: "BUILD_GENERAL1_SMALL",
+        image: "aws/codebuild/standard:2.0",
+        privilegedMode: true,
+        type: "LINUX_CONTAINER",
+        environmentVariables
+      },
+      serviceRole: props.buildRoleArn
+    });
+  }
 
   private getCodeCommitSource = (
     repoName: string,
@@ -237,9 +172,9 @@ export class BawsPipelines extends Stack {
     };
   };
 
-  private createPipelineRole = (): CfnRole => {
-    const role = new CfnRole(this, `baws-role-pipeline-${this.pipelineName}`, {
-      roleName: `baws-pipeline-${this.pipelineName}`,
+  public getPipelineRoleProps = (name:string): CfnRoleProps => {
+    return ({
+      roleName: `baws-pipeline-${name}`,
       assumeRolePolicyDocument: {
         Version: "2012-10-17",
         Statement: [
@@ -254,7 +189,7 @@ export class BawsPipelines extends Stack {
       },
       policies: [
         {
-          policyName: `baws-policy-pipeline-${this.pipelineName}`,
+          policyName: `baws-policy-pipeline-${name}`,
           policyDocument: {
             Statement: [
               {
@@ -323,16 +258,12 @@ export class BawsPipelines extends Stack {
         }
       ]
     });
-
-    return role;
   };
 
-  private createCodeBuildRole = (): CfnRole => {
-    const role = new CfnRole(
-      this,
-      `baws-role-code-build-${this.pipelineName}`,
-      {
-        roleName: `baws-codebuild-${this.pipelineName}`,
+  public getBuildRoleProps = (props: BuildRoleProps): CfnRoleProps => {
+    
+      return ({
+        roleName: `baws-codebuild-${props.name}`,
         assumeRolePolicyDocument: {
           Version: "2012-10-17",
           Statement: [
@@ -357,8 +288,8 @@ export class BawsPipelines extends Stack {
                 {
                   Effect: "Allow",
                   Resource: [
-                    `arn:aws:logs:${this.region}:${this.account}:log-group:codebuild/${this.pipelineName}`,
-                    `arn:aws:logs:${this.region}:${this.account}:log-group:codebuild/${this.pipelineName}:*`
+                    `arn:aws:logs:${props.region}:${props.account}:log-group:codebuild/${props.name}`,
+                    `arn:aws:logs:${props.region}:${props.account}:log-group:codebuild/${props.name}:*`
                   ],
                   Action: [
                     "logs:CreateLogGroup",
@@ -368,7 +299,7 @@ export class BawsPipelines extends Stack {
                 },
                 {
                   Effect: "Allow",
-                  Resource: [`${this.props.bucket.attrArn}*`],
+                  Resource: [`${props.bucketArn}*`],
                   Action: [
                     "s3:PutObject",
                     "s3:GetObject",
@@ -384,9 +315,9 @@ export class BawsPipelines extends Stack {
       }
     );
 
-    return role;
   };
 
+/*
   private createRepoEvent = (
     pipelineArn: string,
     repoArn: string,
@@ -447,6 +378,28 @@ export class BawsPipelines extends Stack {
     });
     rule.addDependsOn(role);
   };
+  */
+}
+
+export interface PipelineProps {
+  bucketName: string;
+  taskName: string;
+  pipelineRole: CfnRole;
+  buildRole: CfnRole;
+}
+
+export interface BuildRoleProps {
+  name:string;
+  region: string;
+  account: string;
+  bucketArn: string;
+}
+
+export interface BuildProps {
+  name: string;
+  taskName?: string;
+  taskURI?: string;
+  buildRoleArn: string;
 }
 
 interface pipelineConfig extends StackProps {
