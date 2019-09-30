@@ -11,14 +11,14 @@ s3:
     - name: baws-pipeline
       # assets | logs | artifacts
       type: artifacts
-      addUniquId: true
+      addUniqueId: true
       # cdnReference:
     - name: baws-assets
       type: assets
-      addUniquId: true
+      addUniqueId: true
     - name: baws-logs
       type: logs
-      addUniquId: true
+      addUniqueId: true
 cdn:
   distributions:
     - name: baws cdn
@@ -106,9 +106,10 @@ cache:
       # memcached | redis
       engine: memcached
       clusterSize: 1
-codeCommitRepos:
-  - name: baws-app
-    description: Created by CDK
+commitRepo:
+  repos:
+    - name: baws-app
+      description: baws cdk app
 ecs:
   clusterName: baws-cluster
   # Example files included in the corresponding directories below. Uncomment to use them.
