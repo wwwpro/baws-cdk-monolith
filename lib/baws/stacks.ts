@@ -334,7 +334,7 @@ export class BawsStack extends Stack {
 
     // Begin task creation.
     const taskDir = YamlConfig.getDirConfigs(config.ecs.configDir);
-    const taskConfig = config.ecs.services;
+    const taskConfig = (typeof config.ecs.services !== 'undefined') ? config.ecs.services: [];
     const tasks: string[] = [...taskDir, ...taskConfig];
 
     let counter = 1;
@@ -546,7 +546,7 @@ export class BawsStack extends Stack {
     const codePipelineDir = YamlConfig.getDirConfigs(
       config.codepipeline.configDir
     );
-    const codePipelineConfig = config.codepipeline.pipelines;
+    const codePipelineConfig = (typeof config.codepipeline.pipelines !== 'undefined')?config.codepipeline.pipelines: [] ;
     const pipelines: string[] = [...codePipelineConfig, ...codePipelineDir];
 
     const pipelineBucket = bucketMap.get("artifacts");
