@@ -385,7 +385,6 @@ export interface PipelineProps {
   bucketName: string;
   taskName: string;
   pipelineRole: CfnRole;
-  buildRole: CfnRole;
 }
 
 export interface BuildRoleProps {

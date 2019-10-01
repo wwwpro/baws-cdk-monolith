@@ -567,11 +567,12 @@ export class BawsStack extends Stack {
         pipelineBuilder.getPipelineRoleProps(item.name)
       );
 
+      const buildName = `${item.name}-build`;
       const buildRole = new CfnRole(
         this,
         `baws-pipeline-build-role-${this.id}`,
         pipelineBuilder.getBuildRoleProps({
-          name: item.name,
+          name: buildName,
           region: this.region,
           account: this.account,
           bucketArn:
@@ -579,8 +580,9 @@ export class BawsStack extends Stack {
         })
       );
 
-      const buildName = `${item.name}-build`;
+      
 
+      // Build our codebuild
       // Service name and task name are identical, so service name can be used
       // where task name is needed.
       const ecrUri = ecrMap.get(item.serviceNameReference);
@@ -596,6 +598,7 @@ export class BawsStack extends Stack {
           })
         );
         build.addDependsOn(logs);
+        build.addDependsOn(buildRole);
       } else {
         const build = new CfnProject(
           this,
@@ -606,6 +609,7 @@ export class BawsStack extends Stack {
           })
         );
         build.addDependsOn(logs);
+        build.addDependsOn(buildRole);
       }
 
       const pipeline = new CfnPipeline(
@@ -616,11 +620,10 @@ export class BawsStack extends Stack {
             typeof pipelineBucket !== "undefined" ? pipelineBucket.name : "",
           taskName: item.taskNameReference,
           pipelineRole,
-          buildRole
         })
       );
       pipeline.addDependsOn(pipelineRole);
-      pipeline.addDependsOn(buildRole);
+      
 
       const pipelineArn = `arn:aws:codepipeline:${this.region}:${this.account}:${item.name}`;
       const repoArn = `arn:aws:codecommit:${this.region}:${this.account}:${item.repoNameReference}`;
