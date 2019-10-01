@@ -47,7 +47,7 @@ export class Tasks {
         containerDefinitions: [
           {
             name: configItem.name,
-            image: "nginx:alpine",
+            image: configItem.imageURI,
             portMappings: [
               {
                 hostPort: configItem.hostPort,

@@ -123,7 +123,7 @@ ecs:
       # Public dockerhub containers only need the pull location. 
       # Official containers, such as nginx, only need the name.
       # Typically, nginx is used as a generic to get the service to pass healthchecks. 
-      imageURI: nginx
+      imageURI: nginx:alpine
       # To disable the service, set this to 0.
       desiredCount: 4
       listeners:

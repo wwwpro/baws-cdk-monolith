@@ -10,11 +10,7 @@ export class LaunchTemplate {
   /**
    * @see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-launchtemplate-launchtemplatedata.html
    */
-  launchTemplate: CfnLaunchTemplate;
-  templateId: string;
-  latestVersion: string;
-  clusterName: string | null;
-  efsId: string | boolean;
+
 
   app: Construct;
 
@@ -39,7 +35,7 @@ export class LaunchTemplate {
 
       // Assemble our userdata.
       const rawData = UserData.forLinux();
-      const commands = this.buildUserData(props.clusterName);
+      const commands = this.buildUserData(props.clusterName, props.efsId);
       rawData.addCommands(...commands);
       const renderedData = rawData.render();
       const userData = Fn.base64(renderedData);
