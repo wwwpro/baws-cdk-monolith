@@ -87,7 +87,7 @@ export class LaunchTemplate {
     commands.push("yum update -y");
 
     // If we belong to a cluster, add ourselves.
-    if (this.clusterName !== null) {
+    if (clusterName !== null) {
       commands.push(
         `echo ECS_CLUSTER=${clusterName} >> /etc/ecs/ecs.config`
       );
