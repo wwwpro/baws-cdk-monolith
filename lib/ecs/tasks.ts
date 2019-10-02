@@ -21,7 +21,7 @@ export class Tasks {
     let mountPoints: CfnTaskDefinition.MountPointProperty[] = [];
 
     for (let key in configItem.volumes) {
-      volumes.push({ name: key, host: configItem.volumes[key] });
+      volumes.push({ name: key, host: {sourcePath: configItem.volumes[key]} });
     }
 
     for (let key in configItem.params) {
