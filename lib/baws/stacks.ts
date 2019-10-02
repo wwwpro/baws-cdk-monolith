@@ -654,7 +654,7 @@ export class BawsStack extends Stack {
       const notifyFunction = new Function(
         this,
         `baws-notify-function-${this.id}`,
-        NotifyFunction.getFunctionProps(config.notifications, this.id)
+        NotifyFunction.getFunctionProps(config.notifications.codepipeline, this.id)
       );
       notifyFunction.addToRolePolicy(
         NotifyFunction.getNotificationPolicy(this.region)

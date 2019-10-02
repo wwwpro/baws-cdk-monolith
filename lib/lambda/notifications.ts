@@ -10,7 +10,7 @@ export class NotifyFunction {
 
   public static getFunctionProps(config: any, id:string): FunctionProps {
     return {
-      functionName: `${config.pipelineFunction}-${id}`,
+      functionName: `${config.functionName}-${id}`,
       description:
         "Created by baws cdk to notify approprriate channels, -slack, email or text- when events pipeline or scaling event occur.",
       runtime: Runtime.NODEJS_10_X,
