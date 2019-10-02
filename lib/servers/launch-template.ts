@@ -97,7 +97,7 @@ export class LaunchTemplate {
     if (efsId !== false) {
       const efsDir = "/mnt/efs";
       //Install efs utilities so we can deal with efs.
-      commands.push("yum install amazon-efs-utils");
+      commands.push("yum install amazon-efs-utils -y");
       // Mount our new efs.
       commands.push(`mkdir -p ${efsDir}`);
       commands.push(
