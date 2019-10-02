@@ -101,7 +101,7 @@ export class LaunchTemplate {
       // Mount our new efs.
       commands.push(`mkdir -p ${efsDir}`);
       commands.push(
-        `echo "${efsId}:/${efsDir} efs tls,_netdev" >> /etc/fstab`
+        `echo "${efsId}:/ ${efsDir} efs tls,_netdev" >> /etc/fstab`
       );
       commands.push("mount -a -t efs defaults");
     }
