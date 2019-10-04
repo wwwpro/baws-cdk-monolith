@@ -34,7 +34,3 @@ new BawsStack(app, 'stack-min', {
   env,
   cdn: true,
 });
-
-new BawsTest(app, 'test-stack',{
-  env
-})
