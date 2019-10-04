@@ -120,10 +120,11 @@ ecs:
   # configDir: config/ecs/tasks
   services:
     - name: baws-app
-      # Public dockerhub containers only need the pull location. 
-      # Official containers, such as nginx, only need the name.
-      # Typically, nginx is used as a generic to get the service to pass healthchecks. 
-      imageURI: nginx:alpine
+      # If create ecr is set to true the URI for that repo will automatically be used, and override
+      # 
+      createECR: true
+      updateEcrImage: false
+      # imageURI: nginx:alpine
       # To disable the service, set this to 0.
       desiredCount: 4
       listeners:
@@ -132,7 +133,7 @@ ecs:
           hosts: 
           - "*.example.com"
           - example.com
-      createECR: true
+      
       type: ec2
       # The amount reserved for your app. If this is too big, and your server doesn't have enough space,
       # it will not be deployed. Ideally, make as small as possible, and deploy more instances with autoscaling.

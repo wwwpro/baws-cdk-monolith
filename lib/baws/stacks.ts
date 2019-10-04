@@ -43,6 +43,7 @@ import {
   CfnRepository as CfnEcrRepository,
   Repository
 } from "@aws-cdk/aws-ecr";
+import { DockerImageAsset } from '@aws-cdk/aws-ecr-assets';
 import { CfnPipeline } from "@aws-cdk/aws-codepipeline";
 import { CfnRole, CfnInstanceProfile } from "@aws-cdk/aws-iam";
 import { CfnBucket } from "@aws-cdk/aws-s3";
@@ -477,6 +478,8 @@ export class BawsStack extends Stack {
       });
     }
 
+    
+
     // Build out tasks, their log groups, and associated services.
     tasks.forEach((item: any) => {
       const logGroup = new CfnLogGroup(
@@ -496,6 +499,15 @@ export class BawsStack extends Stack {
           `baws-ecr-lookup-${item.name}`,
           item.name
         );
+
+        if (typeof item.updateEcrImage !== 'undefined' && item.updateEcrImage === true ) {
+          const asset = new DockerImageAsset(this, `baws-image-asset-${this.id}`,{
+            directory: '../ecs/ecr-asset',
+            repositoryName: item.name
+          })
+        }
+
+
         ecrMap.set(item.name, uri.repositoryUri);
       }
 
@@ -541,6 +553,7 @@ export class BawsStack extends Stack {
       });
       commitRepos.push(repo);
     });
+
 
     // Prepare pipeeline variables.
     const codePipelineDir = YamlConfig.getDirConfigs(

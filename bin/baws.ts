@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import "source-map-support/register";
 import { BawsStack } from "../lib/baws/stacks";
-import { TestStack } from "../lib/baws/test";
 import { App } from "@aws-cdk/core";
 
 const app = new App();
@@ -35,3 +34,7 @@ new BawsStack(app, 'stack-min', {
   env,
   cdn: true,
 });
+
+new BawsTest(app, 'test-stack',{
+  env
+})
