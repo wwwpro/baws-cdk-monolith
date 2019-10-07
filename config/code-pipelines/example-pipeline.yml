@@ -1,4 +1,4 @@
-pipelineName: baws-pipeline
+name: baws-pipeline
 type: ecs
 # must match repo name defined in codecommit.
 repoNameReference: baws-app

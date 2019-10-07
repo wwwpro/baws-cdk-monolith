@@ -570,20 +570,20 @@ export class BawsStack extends Stack {
 
       const pipelineBuilder = new CodePipeline();
 
-      const logs = new CfnLogGroup(this, `baws-codepipeline-logs-${this.id}`, {
+      const logs = new CfnLogGroup(this, `baws-codepipeline-logs-${item.name}`, {
         logGroupName: `/codebuild/${item.name}`
       });
 
       const pipelineRole = new CfnRole(
         this,
-        `baws-pipeline-role-${this.id}`,
+        `baws-pipeline-role-${item.name}`,
         pipelineBuilder.getPipelineRoleProps(item.name)
       );
 
       const buildName = `${item.name}-build`;
       const buildRole = new CfnRole(
         this,
-        `baws-pipeline-build-role-${this.id}`,
+        `baws-pipeline-build-role-${item.name}`,
         pipelineBuilder.getBuildRoleProps({
           name: buildName,
           region: this.region,
