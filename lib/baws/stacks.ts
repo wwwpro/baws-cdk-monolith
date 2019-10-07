@@ -602,7 +602,7 @@ export class BawsStack extends Stack {
       if (typeof ecrUri !== "undefined") {
         const build = new CfnProject(
           this,
-          `baws-build-${this.id}`,
+          `baws-build-${item.name}`,
           pipelineBuilder.getBuildProps({
             name: buildName,
             buildRoleArn: buildRole.attrArn,
@@ -615,7 +615,7 @@ export class BawsStack extends Stack {
       } else {
         const build = new CfnProject(
           this,
-          `baws-build-${this.id}`,
+          `baws-build-${item.name}`,
           pipelineBuilder.getBuildProps({
             name: buildName,
             buildRoleArn: buildRole.attrArn
@@ -627,7 +627,7 @@ export class BawsStack extends Stack {
 
       const pipeline = new CfnPipeline(
         this,
-        `baws-codepipeline-${this.id}`,
+        `baws-codepipeline-${item.name}`,
         pipelineBuilder.getCodePipelineProps(item, {
           bucketName:
             typeof pipelineBucket !== "undefined" ? pipelineBucket.name : "",
@@ -643,15 +643,15 @@ export class BawsStack extends Stack {
 
       const repoWatchRole = new CfnRole(
         this,
-        `baws-repo-role-${this.id}`,
-        Roles.getRepoWatchRoleProps(pipelineArn, this.id)
+        `baws-repo-role-${item.name}`,
+        Roles.getRepoWatchRoleProps(pipelineArn, item.name)
       );
 
       const watchEvent = new CfnRule(
         this,
-        `baws-pipeline-watcher-${this.id}`,
+        `baws-pipeline-watcher-${item.name}`,
         Events.getPipelineWatcherProps({
-          id: this.id,
+          id: item.name,
           pipelineArn: pipelineArn,
           roleArn: repoWatchRole.attrArn,
           repoArn: repoArn,
