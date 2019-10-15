@@ -316,69 +316,6 @@ export class CodePipeline {
     );
 
   };
-
-/*
-  private createRepoEvent = (
-    pipelineArn: string,
-    repoArn: string,
-    branchToWatch: string
-  ): void => {
-    //Our rule needs a role
-    const role = new CfnRole(this, `baws-rule-role-${this.pipelineName}`, {
-      roleName: `baws-codecommit-watcher-${this.pipelineName}`,
-      assumeRolePolicyDocument: {
-        Version: "2012-10-17",
-        Statement: [
-          {
-            Effect: "Allow",
-            Principal: {
-              Service: "events.amazonaws.com"
-            },
-            Action: "sts:AssumeRole"
-          }
-        ]
-      },
-      policies: [
-        {
-          policyName: `baws-codecommit-watcher-policy-${this.pipelineName}`,
-          policyDocument: {
-            Version: "2012-10-17",
-            Statement: [
-              {
-                Effect: "Allow",
-                Action: ["codepipeline:StartPipelineExecution"],
-                Resource: [pipelineArn]
-              }
-            ]
-          }
-        }
-      ]
-    });
-
-    // And finally, create our rule.
-    const rule = new CfnRule(this, `baws-repo-rule-${this.pipelineName}`, {
-      name: `baws-repo-watchter-${this.pipelineName}`,
-      targets: [
-        {
-          arn: pipelineArn,
-          id: "CodePipeline",
-          roleArn: role.attrArn
-        }
-      ],
-      eventPattern: {
-        source: ["aws.codecommit"],
-        "detail-type": ["CodeCommit Repository State Change"],
-        resources: [`${repoArn}`],
-        detail: {
-          event: ["referenceCreated", "referenceUpdated"],
-          referenceType: ["branch"],
-          referenceName: [branchToWatch]
-        }
-      }
-    });
-    rule.addDependsOn(role);
-  };
-  */
 }
 
 export interface PipelineProps {

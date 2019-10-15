@@ -1,6 +1,7 @@
 name: example-app
 desiredCount: 4
 imageURI: nginx
+updateEcrImage: true
 listeners:
   - condition: host-header
     hosts:

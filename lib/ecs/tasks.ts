@@ -47,7 +47,7 @@ export class Tasks {
         containerDefinitions: [
           {
             name: configItem.name,
-            image: configItem.imageURI,
+            ...(configItem.updateEcrImage === true && {image: configItem.imageURI}),
             portMappings: [
               {
                 hostPort: configItem.hostPort,
@@ -74,6 +74,15 @@ export class Tasks {
         executionRoleArn: props.executionRoleRef,
         volumes
       }
+
+      if (configItem.updateEcrImage === true) {
+        const tempTask:any = {
+          containerDefinitions:[{
+
+          }]
+        }
+      }
+
       return task;
   };
 }
