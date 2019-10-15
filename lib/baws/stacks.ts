@@ -118,7 +118,6 @@ export class BawsStack extends Stack {
       subnet.addDependsOn(vpc);
       publicSubnets.push(subnet);
     });
-    this.node.addInfo(`Azs ${azs}`);
 
     const gateway = new CfnInternetGateway(
       this,

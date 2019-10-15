@@ -117,14 +117,14 @@ ecs:
   # defined below will be created. Either comment the `tasksDir` or delete the tasks object below,
   # if you don't want corresponding tasks or servics to be created.
   
-  # configDir: config/ecs/tasks
+  configDir: config/ecs/tasks
   services:
     - name: baws-app
       # If create ecr is set to true the URI for that repo will automatically be used, and override
       # 
       createECR: true
       updateEcrImage: false
-      # imageURI: nginx:alpine
+      imageURI: nginx:alpine
       # To disable the service, set this to 0.
       desiredCount: 4
       listeners:
@@ -181,7 +181,7 @@ ecs:
         # EFS: /var/www/html/web/sites/plugins/uploads
       
 codepipeline:
-  # configDir: config/code-pipelines
+  configDir: config/code-pipelines
   pipelines:
     - name: baws-pipeline
       type: ecs

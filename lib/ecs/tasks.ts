@@ -74,8 +74,6 @@ export class Tasks {
         executionRoleArn: props.executionRoleRef,
         volumes
       }
-
-
       return task;
   };
 }

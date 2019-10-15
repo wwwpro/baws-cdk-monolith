@@ -22,9 +22,11 @@ export class YamlConfig {
         const configFiles = FS.readdirSync(dirPath);
   
         configFiles.forEach(file => {
-          const filePath = Path.join(dirPath, file);
-          const config = Yaml.safeLoad(FS.readFileSync(filePath, "utf-8"));
-          configs.push(config);
+          if (!file.includes('.example')) {
+            const filePath = Path.join(dirPath, file);
+            const config = Yaml.safeLoad(FS.readFileSync(filePath, "utf-8"));
+            configs.push(config);
+          }
         });
       } catch (error) {
         console.log(`Directory read failed: ${error}`);
