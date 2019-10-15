@@ -47,7 +47,7 @@ export class Tasks {
         containerDefinitions: [
           {
             name: configItem.name,
-            ...(configItem.updateEcrImage === true && {image: configItem.imageURI}),
+            image: configItem.imageURI,
             portMappings: [
               {
                 hostPort: configItem.hostPort,
