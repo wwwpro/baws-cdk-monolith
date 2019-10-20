@@ -359,7 +359,7 @@ export class BawsStack extends Stack {
       // Add new listener if it's a new port we haven't create yet.
       if (
         typeof item.listenerPort !== "undefined" &&
-        typeof listenerPortsMap.get(item.listnerPort) !== "undefined"
+        typeof listenerPortsMap.get(item.listnerPort) === "undefined"
       ) {
         const listen = new CfnListener(
           this,
