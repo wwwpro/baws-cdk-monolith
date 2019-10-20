@@ -89,7 +89,7 @@ export class BawsStack extends Stack {
     const bastionIps = this.node.tryGetContext("bastionIps");
     const sslArn = this.node.tryGetContext("SSLCertArn");
 
-    let listenerPorts = [80,443];
+    let listenerPortsMap: Map<number, CfnListener> = new Map();
 
     let ecrMap: Map<string, string> = new Map();
     let targets: CfnTargetGroup[] = [];
@@ -321,6 +321,7 @@ export class BawsStack extends Stack {
       ALB.getPortRedirectListenerProps(alb.ref)
     );
     redirect.addDependsOn(alb);
+    listenerPortsMap.set(80, redirect);
 
     const listener = new CfnListener(
       this,
@@ -333,6 +334,7 @@ export class BawsStack extends Stack {
     );
     listener.addDependsOn(alb);
     listener.addDependsOn(targetGroup);
+    listenerPortsMap.set(443, listener);
 
     // Begin task creation.
     const taskDir = YamlConfig.getDirConfigs(config.ecs.configDir);
@@ -354,20 +356,12 @@ export class BawsStack extends Stack {
       targetMap.set(item.name, target.ref);
       targetRefs.push(target.ref);
 
-      const listenerRule = new CfnListenerRule(
-        this,
-        `baws-listener-rule-${item.name}`,
-        Services.getHostListenerProps(
-          item,
-          { listenerRef: listener.ref, targetRef: target.ref, counter },
-          counter
-        )
-      );
-      listenerRule.addDependsOn(listener);
-      listenerRule.addDependsOn(target);
-
-      if (typeof item.listenerPort !== 'undefined' && !listenerPorts.includes(item.listenerPort)) {
-        new CfnListener(
+      // Add new listener if it's a new port we haven't create yet.
+      if (
+        typeof item.listenerPort !== "undefined" &&
+        typeof listenerPortsMap.get(item.listnerPort) !== "undefined"
+      ) {
+        const listen = new CfnListener(
           this,
           `baws-listener-${item.listenerPort}`,
           ALB.getListenerProps({
@@ -377,9 +371,30 @@ export class BawsStack extends Stack {
             targetRef: targetGroup.ref
           })
         );
+
+        listenerPortsMap.set(item.listenerPort, listen);
       }
 
-      counter++;
+      // Add a listener
+      const taskPort =
+        typeof item.listenerPort === "undefined" ? 443 : item.listenerPort;
+      const cfnListen = listenerPortsMap.get(taskPort);
+
+      if (typeof cfnListen !== "undefined") {
+        const listenerRule = new CfnListenerRule(
+          this,
+          `baws-listener-rule-${item.name}`,
+          Services.getHostListenerProps(
+            item,
+            { listenerRef: listener.ref, targetRef: target.ref, counter },
+            counter
+          )
+        );
+        listenerRule.addDependsOn(cfnListen);
+        listenerRule.addDependsOn(target);
+
+        counter++;
+      }
     });
 
     const scaling = new CfnAutoScalingGroup(
@@ -588,7 +603,6 @@ export class BawsStack extends Stack {
 
     // Create all of our pipelines and related components.
     pipelines.forEach((item: any) => {
-
       const pipelineBuilder = new CodePipeline();
 
       const logs = new CfnLogGroup(
