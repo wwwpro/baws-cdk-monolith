@@ -356,7 +356,7 @@ export class BawsStack extends Stack {
 
       const listenerRule = new CfnListenerRule(
         this,
-        `baws-listener-${item.name}`,
+        `baws-listener-rule-${item.name}`,
         Services.getHostListenerProps(
           item,
           { listenerRef: listener.ref, targetRef: target.ref, counter },
