@@ -54,7 +54,7 @@ launchTemplates:
     storageSize: 20
     efs: false
 scaling:
-  launchTemplateReference: baws-ecs-template
+  
   desiredSize: "2"
   maxSize: "7"
   minSize: "1"
@@ -118,12 +118,11 @@ ecs:
   # if you don't want corresponding tasks or servics to be created.
   
   configDir: config/ecs/tasks
-  services:
+  tasks:
     - name: baws-app
       # If create ecr is set to true the URI for that repo will automatically be used, and override
       # 
       createECR: true
-      updateEcrImage: false
       imageURI: nginx:alpine
       # To disable the service, set this to 0.
       desiredCount: 4

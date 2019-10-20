@@ -43,4 +43,4 @@ mounts:
   # TMP: /var/www/html/tmp
   # PRIVATE: /var/www/html/private
   # WordPress
-  # EFS: /var/www/html/web/sites/plugins/uploads
+  # EFS: /var/www/html/web/wp-content/uploads
