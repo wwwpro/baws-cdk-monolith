@@ -369,7 +369,7 @@ export class BawsStack extends Stack {
       if (typeof item.listenerPort !== 'undefined' && !listenerPorts.includes(item.listenerPort)) {
         new CfnListener(
           this,
-          `baws-listener-default`,
+          `baws-listener-${item.listenerPort}`,
           ALB.getListenerProps({
             port: item.listenerPort,
             albArn: alb.ref,
