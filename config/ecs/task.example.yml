@@ -1,7 +1,6 @@
 name: example-app
-desiredCount: 4
-imageURI: nginx
-updateEcrImage: true
+desiredCount: 2
+imageURI: nginx:alpine
 listeners:
   - condition: host-header
     hosts:
@@ -13,6 +12,8 @@ hardMemoryLimit: 1024
 softMemoryLimit: 256
 hostPort: 0
 containerPort: 80
+# Optional. Defaults to 443. 
+# listenerPort: 443
 cpuUnits: 256
 logRegion: us-east-1
 # values passed directly to the container

@@ -89,6 +89,8 @@ export class BawsStack extends Stack {
     const bastionIps = this.node.tryGetContext("bastionIps");
     const sslArn = this.node.tryGetContext("SSLCertArn");
 
+    let listenerPorts = [80,443];
+
     let ecrMap: Map<string, string> = new Map();
     let targets: CfnTargetGroup[] = [];
     let targetMap: Map<string, string> = new Map();
@@ -363,6 +365,19 @@ export class BawsStack extends Stack {
       );
       listenerRule.addDependsOn(listener);
       listenerRule.addDependsOn(target);
+
+      if (typeof item.listenerPort !== 'undefined' && !listenerPorts.includes(item.listenerPort)) {
+        new CfnListener(
+          this,
+          `baws-listener-default`,
+          ALB.getListenerProps({
+            port: item.listenerPort,
+            albArn: alb.ref,
+            sslArn,
+            targetRef: targetGroup.ref
+          })
+        );
+      }
 
       counter++;
     });
