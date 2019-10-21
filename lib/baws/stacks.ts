@@ -381,8 +381,10 @@ export class BawsStack extends Stack {
       const cfnListen = listenerPortsMap.get(taskPort);
 
       if (typeof cfnListen !== "undefined") {
-
         const priority = (typeof item.priority !== 'undefined') ? item.priority : counter;
+
+        this.node.addInfo(`Priority for ${item.name}: ${priority} `);
+
         const listenerRule = new CfnListenerRule(
           this,
           `baws-listener-rule-${item.name}`,
