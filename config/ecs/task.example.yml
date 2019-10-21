@@ -1,5 +1,6 @@
 name: example-app
 desiredCount: 2
+priority: 200
 imageURI: nginx:alpine
 listeners:
   - condition: host-header
