@@ -1,48 +1,47 @@
-name: hp-app
-desiredCount: 4
+name: example-app
+desiredCount: 2
 imageURI: nginx:alpine
-updateEcrImage: true
 listeners:
   - condition: host-header
     hosts:
-    - www.healthyplace.com
-    - healthyplace.com
+    - "*.example.com"
+    - example.com
 createECR: true
 type: ec2
 hardMemoryLimit: 1024
 softMemoryLimit: 256
 hostPort: 0
 containerPort: 80
+# Optional. Defaults to 443. 
+# listenerPort: 443
 cpuUnits: 256
 logRegion: us-east-1
 # values passed directly to the container
 variables:
-  NGINX_ENABLED: healthyplace
-  WEBROOT: web
-  REDIS_PREFIX: live_
+#  NGINX_ENABLED: drupal
+#  WEBROOT: web
 # values retreived from the parameter store
 # Underscored values listed here, for instance db_name, db_user, db_host must be created 
 # in the parameter store before using them.
 # Uncomment values according to usage.
 params:
-  DB_HOST: db-host
+  # DB_HOST: db-host
   # DB_HOST_RO: baws-db-host-ro
-  DB_NAME: prod-hp-db-user
-  DB_USER: prod-hp-db-user
-  DB_PASS: prod-hp-db-pass
-  REDIS_HOST: hp-cache-host
+  # DB_NAME: db_name
+  # DB_USER: db_user
+  # DB_PASS: db_pass
   # REDIS_HOST: redis_host
   # REDIS_PREFIX: redis_prefix
 # Host volumes. Names here will be available as mount points in the bind section
 # The key below `volumes` must have a corresponding volume key from above.
 volumes:
-  EFS: /mnt/efs/hp/assets
-  PRIVATE: /mnt/efs/hp/private
-  TMP: /mnt/efs/hp/tmp
+  # EFS: /mnt/efs/website-name/assets
+  # PRIVATE: /mnt/efs/website-name/private
+  # TMP: /mnt/efs/tmp/website-name
 mounts:
   # Drupal
-  EFS: /var/www/html/web/sites/default/files
-  TMP: /var/www/html/tmp
-  PRIVATE: /var/www/html/private
+  # EFS: /var/www/html/web/sites/default/files
+  # TMP: /var/www/html/tmp
+  # PRIVATE: /var/www/html/private
   # WordPress
-  # EFS: /var/www/html/web/sites/plugins/uploads
+  # EFS: /var/www/html/web/wp-content/uploads

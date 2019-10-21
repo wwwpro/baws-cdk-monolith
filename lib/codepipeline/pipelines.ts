@@ -37,7 +37,7 @@ export class CodePipeline {
         this.getBuildStage(projectName),
         this.getECSDeploy(
           configItem.clusterNameReference,
-          configItem.serviceNameReference
+          configItem.taskNameReference
         )
       ]
     });

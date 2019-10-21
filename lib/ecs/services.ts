@@ -25,8 +25,13 @@ export class Services {
     const containerName = configItem.name;
 
     return {
+      serviceName: configItem.name,
       taskDefinition: props.taskRef,
       healthCheckGracePeriodSeconds: 60,
+      deploymentConfiguration: {
+        minimumHealthyPercent: 50,
+        maximumPercent: 200
+      },
       loadBalancers: [
         {
           containerPort,
@@ -35,7 +40,6 @@ export class Services {
         }
       ],
       cluster: props.clusterName,
-      serviceName: configItem.name,
       desiredCount: configItem.desiredCount
     };
   }

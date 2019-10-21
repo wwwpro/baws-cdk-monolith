@@ -43,7 +43,7 @@ import {
   CfnRepository as CfnEcrRepository,
   Repository
 } from "@aws-cdk/aws-ecr";
-import { DockerImageAsset } from '@aws-cdk/aws-ecr-assets';
+import { DockerImageAsset } from "@aws-cdk/aws-ecr-assets";
 import { CfnPipeline } from "@aws-cdk/aws-codepipeline";
 import { CfnRole, CfnInstanceProfile } from "@aws-cdk/aws-iam";
 import { CfnBucket } from "@aws-cdk/aws-s3";
@@ -88,6 +88,8 @@ export class BawsStack extends Stack {
     const keyName = this.node.tryGetContext("ec2Key");
     const bastionIps = this.node.tryGetContext("bastionIps");
     const sslArn = this.node.tryGetContext("SSLCertArn");
+
+    let listenerPortsMap: Map<number, CfnListener> = new Map();
 
     let ecrMap: Map<string, string> = new Map();
     let targets: CfnTargetGroup[] = [];
@@ -319,6 +321,7 @@ export class BawsStack extends Stack {
       ALB.getPortRedirectListenerProps(alb.ref)
     );
     redirect.addDependsOn(alb);
+    listenerPortsMap.set(80, redirect);
 
     const listener = new CfnListener(
       this,
@@ -331,10 +334,12 @@ export class BawsStack extends Stack {
     );
     listener.addDependsOn(alb);
     listener.addDependsOn(targetGroup);
+    listenerPortsMap.set(443, listener);
 
     // Begin task creation.
     const taskDir = YamlConfig.getDirConfigs(config.ecs.configDir);
-    const taskConfig = (typeof config.ecs.services !== 'undefined') ? config.ecs.services: [];
+    const taskConfig =
+      typeof config.ecs.tasks !== "undefined" ? config.ecs.tasks : [];
     const tasks: string[] = [...taskDir, ...taskConfig];
 
     let counter = 1;
@@ -351,19 +356,45 @@ export class BawsStack extends Stack {
       targetMap.set(item.name, target.ref);
       targetRefs.push(target.ref);
 
-      const listenerRule = new CfnListenerRule(
-        this,
-        `baws-litener-${item.name}`,
-        Services.getHostListenerProps(
-          item,
-          { listenerRef: listener.ref, targetRef: target.ref, counter },
-          counter
-        )
-      );
-      listenerRule.addDependsOn(listener);
-      listenerRule.addDependsOn(target);
+      // Add new listener if it's a new port we haven't create yet.
+      if (
+        typeof item.listenerPort !== "undefined" &&
+        typeof listenerPortsMap.get(item.listnerPort) === "undefined"
+      ) {
+        const listen = new CfnListener(
+          this,
+          `baws-listener-${item.listenerPort}`,
+          ALB.getListenerProps({
+            port: item.listenerPort,
+            albArn: alb.ref,
+            sslArn,
+            targetRef: targetGroup.ref
+          })
+        );
 
-      counter++;
+        listenerPortsMap.set(item.listenerPort, listen);
+      }
+
+      // Add a listener
+      const taskPort =
+        typeof item.listenerPort === "undefined" ? 443 : item.listenerPort;
+      const cfnListen = listenerPortsMap.get(taskPort);
+
+      if (typeof cfnListen !== "undefined") {
+        const listenerRule = new CfnListenerRule(
+          this,
+          `baws-listener-rule-${item.name}`,
+          Services.getHostListenerProps(
+            item,
+            { listenerRef: cfnListen.ref, targetRef: target.ref, counter },
+            counter
+          )
+        );
+        listenerRule.addDependsOn(cfnListen);
+        listenerRule.addDependsOn(target);
+
+        counter++;
+      }
     });
 
     const scaling = new CfnAutoScalingGroup(
@@ -477,8 +508,6 @@ export class BawsStack extends Stack {
       });
     }
 
-    
-
     // Build out tasks, their log groups, and associated services.
     tasks.forEach((item: any) => {
       const logGroup = new CfnLogGroup(
@@ -499,13 +528,19 @@ export class BawsStack extends Stack {
           item.name
         );
 
-        if (typeof item.updateEcrImage !== 'undefined' && item.updateEcrImage === true ) {
-          const asset = new DockerImageAsset(this, `baws-image-asset-${this.id}`,{
-            directory: '../ecs/ecr-asset',
-            repositoryName: item.name
-          })
+        if (
+          typeof item.updateEcrImage !== "undefined" &&
+          item.updateEcrImage === true
+        ) {
+          const asset = new DockerImageAsset(
+            this,
+            `baws-image-asset-${this.id}`,
+            {
+              directory: "../ecs/ecr-asset",
+              repositoryName: item.name
+            }
+          );
         }
-
 
         ecrMap.set(item.name, uri.repositoryUri);
       }
@@ -548,30 +583,35 @@ export class BawsStack extends Stack {
 
     commitReposConfig.forEach((item: any) => {
       const repo = new CfnRepository(this, `baws-commit-repo-${item.name}`, {
-        repositoryName: item.name
+        repositoryName: item.name,
+        repositoryDescription: item.description
       });
       commitRepos.push(repo);
     });
-
 
     // Prepare pipeeline variables.
     const codePipelineDir = YamlConfig.getDirConfigs(
       config.codepipeline.configDir
     );
-    const codePipelineConfig = (typeof config.codepipeline.pipelines !== 'undefined')?config.codepipeline.pipelines: [] ;
+    const codePipelineConfig =
+      typeof config.codepipeline.pipelines !== "undefined"
+        ? config.codepipeline.pipelines
+        : [];
     const pipelines: string[] = [...codePipelineConfig, ...codePipelineDir];
 
     const pipelineBucket = bucketMap.get("artifacts");
 
     // Create all of our pipelines and related components.
     pipelines.forEach((item: any) => {
-      const taskReferenceConfig = item.taskNameReference;
-
       const pipelineBuilder = new CodePipeline();
 
-      const logs = new CfnLogGroup(this, `baws-codepipeline-logs-${item.name}`, {
-        logGroupName: `/codebuild/${item.name}`
-      });
+      const logs = new CfnLogGroup(
+        this,
+        `baws-codepipeline-logs-${item.name}`,
+        {
+          logGroupName: `/codebuild/${item.name}`
+        }
+      );
 
       const pipelineRole = new CfnRole(
         this,
@@ -592,12 +632,10 @@ export class BawsStack extends Stack {
         })
       );
 
-      
-
       // Build our codebuild
       // Service name and task name are identical, so service name can be used
       // where task name is needed.
-      const ecrUri = ecrMap.get(item.serviceNameReference);
+      const ecrUri = ecrMap.get(item.taskNameReference);
       if (typeof ecrUri !== "undefined") {
         const build = new CfnProject(
           this,
@@ -605,7 +643,7 @@ export class BawsStack extends Stack {
           pipelineBuilder.getBuildProps({
             name: buildName,
             buildRoleArn: buildRole.attrArn,
-            taskName: item.serviceNameReference,
+            taskName: item.taskNameReference,
             taskURI: ecrUri
           })
         );
@@ -631,11 +669,10 @@ export class BawsStack extends Stack {
           bucketName:
             typeof pipelineBucket !== "undefined" ? pipelineBucket.name : "",
           taskName: item.taskNameReference,
-          pipelineRole,
+          pipelineRole
         })
       );
       pipeline.addDependsOn(pipelineRole);
-      
 
       const pipelineArn = `arn:aws:codepipeline:${this.region}:${this.account}:${item.name}`;
       const repoArn = `arn:aws:codecommit:${this.region}:${this.account}:${item.repoNameReference}`;
@@ -666,7 +703,10 @@ export class BawsStack extends Stack {
       const notifyFunction = new Function(
         this,
         `baws-notify-function-${this.id}`,
-        NotifyFunction.getFunctionProps(config.notifications.codepipeline, this.id)
+        NotifyFunction.getFunctionProps(
+          config.notifications.codepipeline,
+          this.id
+        )
       );
       notifyFunction.addToRolePolicy(
         NotifyFunction.getNotificationPolicy(this.region)
@@ -726,7 +766,7 @@ export class BawsStack extends Stack {
         if (typeof assetBucket !== "undefined") {
           assetBucketDomain = assetBucket.domain;
         }
-        
+
         new CfnDistribution(
           this,
           `baws-distribution-${this.id}-${item.name}`,
@@ -736,7 +776,6 @@ export class BawsStack extends Stack {
             bucketDNS: assetBucketDomain
           })
         );
-        
       });
     }
   };

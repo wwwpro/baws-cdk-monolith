@@ -1,0 +1,23 @@
+name: example-app
+desiredCount: 1
+imageURI: phpmyadmin/phpmyadmin
+listenerPort: 10000
+listeners:
+  - condition: host-header
+    hosts:
+    - "*.example.com"
+    - example.com
+createECR: true
+type: ec2
+hardMemoryLimit: 512
+softMemoryLimit: 128
+hostPort: 0
+containerPort: 80
+# Optional. Defaults to 443. 
+# listenerPort: 443
+cpuUnits: 256
+logRegion: us-east-1
+# values passed directly to the container
+# Default value of "db-host" is set by rds.dbHostParamName config value.
+params:
+  PMA_HOST: db-host
