@@ -122,8 +122,9 @@ ecs:
     - name: baws-app
       # If create ecr is set to true the URI for that repo will automatically be used, and override
       # 
-      createECR: true
       imageURI: nginx:alpine
+      priority: 100
+      createECR: true
       # To disable the service, set this to 0.
       desiredCount: 4
       listeners:

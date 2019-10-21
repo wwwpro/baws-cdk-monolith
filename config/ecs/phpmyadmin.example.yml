@@ -1,5 +1,6 @@
 name: example-app
 desiredCount: 1
+priority: 1000
 imageURI: phpmyadmin/phpmyadmin
 listenerPort: 10000
 listeners:
