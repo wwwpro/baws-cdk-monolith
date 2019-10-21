@@ -47,7 +47,6 @@ export class Services {
   public static getHostListenerProps(
     configItem: any,
     props: any,
-    priority: number = 1
   ): CfnListenerRuleProps {
     const hosts: string[] = configItem.listeners[0].hosts;
 
@@ -67,7 +66,7 @@ export class Services {
         }
       ],
       listenerArn: props.listenerRef,
-      priority
+      priority: props.priority
     };
   }
 

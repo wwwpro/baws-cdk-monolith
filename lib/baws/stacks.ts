@@ -389,7 +389,6 @@ export class BawsStack extends Stack {
           Services.getHostListenerProps(
             item,
             { listenerRef: cfnListen.ref, targetRef: target.ref, priority },
-            counter
           )
         );
         listenerRule.addDependsOn(cfnListen);
