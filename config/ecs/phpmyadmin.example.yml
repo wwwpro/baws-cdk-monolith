@@ -1,4 +1,4 @@
-name: example-app
+name: phpmyadmin
 desiredCount: 1
 priority: 1000
 imageURI: phpmyadmin/phpmyadmin
@@ -8,7 +8,7 @@ listeners:
     hosts:
     - "*.example.com"
     - example.com
-createECR: true
+createECR: false
 type: ec2
 hardMemoryLimit: 512
 softMemoryLimit: 128
