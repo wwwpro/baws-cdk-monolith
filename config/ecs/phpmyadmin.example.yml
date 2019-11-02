@@ -14,8 +14,6 @@ hardMemoryLimit: 512
 softMemoryLimit: 128
 hostPort: 0
 containerPort: 80
-# Optional. Defaults to 443. 
-# listenerPort: 443
 cpuUnits: 256
 logRegion: us-east-1
 # values passed directly to the container

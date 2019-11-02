@@ -117,7 +117,7 @@ ecs:
   # defined below will be created. Either comment the `tasksDir` or delete the tasks object below,
   # if you don't want corresponding tasks or servics to be created.
   
-  configDir: config/ecs/tasks
+  configDir: config/ecs
   tasks:
     - name: baws-app
       # If create ecr is set to true the URI for that repo will automatically be used, and override
@@ -200,5 +200,5 @@ notifications:
     pipelineNameReference: baws-pipeline
     # Info on setting up a slack hook here: 
     # https://api.slack.com/slack-apps
-    slackChannel: aws
-    slackURL: 
+    # slackChannel: aws
+    # slackURL: 
