@@ -375,27 +375,31 @@ export class BawsStack extends Stack {
         listenerPortsMap.set(item.listenerPort, listen);
       }
 
-      // Add a listener
-      const taskPort =
-        typeof item.listenerPort === "undefined" ? 443 : item.listenerPort;
-      const cfnListen = listenerPortsMap.get(taskPort);
+      item.listeners.forEach((listen: any) => {
+        // Add listener rules.
+        const taskPort =
+          typeof listen.listenerPort === "undefined" ? 443 : listen.listenerPort;
+        const cfnListen = listenerPortsMap.get(taskPort);
+        const listenerProps = new Services();
 
-      if (typeof cfnListen !== "undefined") {
+        if (typeof cfnListen !== "undefined") {
+          const legacyPriority =
+            typeof item.priority !== "undefined" ? item.priority : counter;
+          const listenerRule = new CfnListenerRule(
+            this,
+            `baws-listener-rule-${item.name}`,
+            listenerProps.getListenerRuleProps(item, {
+              listenerRef: cfnListen.ref,
+              targetRef: target.ref,
+              legacyPriority
+            })
+          );
+          listenerRule.addDependsOn(cfnListen);
+          listenerRule.addDependsOn(target);
 
-        const priority = (typeof item.priority !== 'undefined') ? item.priority : counter;
-        const listenerRule = new CfnListenerRule(
-          this,
-          `baws-listener-rule-${item.name}`,
-          Services.getHostListenerProps(
-            item,
-            { listenerRef: cfnListen.ref, targetRef: target.ref, priority },
-          )
-        );
-        listenerRule.addDependsOn(cfnListen);
-        listenerRule.addDependsOn(target);
-
-        counter++;
-      }
+          counter++;
+        }
+      });
     });
 
     const scaling = new CfnAutoScalingGroup(

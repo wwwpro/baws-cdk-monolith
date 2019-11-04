@@ -1,10 +1,10 @@
 name: phpmyadmin
 desiredCount: 1
-priority: 1000
 imageURI: phpmyadmin/phpmyadmin
-listenerPort: 10000
 listeners:
-  - condition: host-header
+  - type: host-header
+    priority: 1000
+    listenerPort: 10000
     hosts:
     - "*.example.com"
     - example.com

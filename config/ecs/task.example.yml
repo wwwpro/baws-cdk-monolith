@@ -27,6 +27,7 @@ variables:
   # NGINX_ENABLED: drupal
   # WEBROOT: web
   # PHP options will alter the config. For wwwpro/lep container.
+
 # values retreived from the parameter store
 # Underscored values listed here, for instance db_name, db_user, db_host must be created 
 # in the parameter store before using them.
