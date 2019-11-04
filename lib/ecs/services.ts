@@ -95,7 +95,7 @@ export class Services {
           type: "redirect",
           redirectConfig: {
             statusCode: "HTTP_301",
-            protocol: "https",
+            protocol: "HTTPS",
             port: "443",
             path: "#{path}",
             query: "#{query}",
