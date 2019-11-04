@@ -387,7 +387,7 @@ export class BawsStack extends Stack {
             typeof item.priority !== "undefined" ? item.priority : counter;
           const listenerRule = new CfnListenerRule(
             this,
-            `baws-listener-rule-${item.name}`,
+            `baws-listener-rule-${item.name}-${counter}`,
             listenerProps.getListenerRuleProps(item, {
               listenerRef: cfnListen.ref,
               targetRef: target.ref,
