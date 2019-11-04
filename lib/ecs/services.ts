@@ -97,7 +97,7 @@ export class Services {
             statusCode: "HTTP_301",
             protocol: "HTTPS",
             port: "443",
-            path: "#{path}",
+            path: "/#{path}",
             query: "#{query}",
             host: configItem.to
           }
