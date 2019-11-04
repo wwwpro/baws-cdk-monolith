@@ -50,7 +50,6 @@ export class Services {
     config: any,
     props: any
   ): CfnListenerRuleProps => {
-    const functionMap: Map<string, string> = new Map();
     let listenerProps: CfnListenerRuleProps;
 
     if (config.type == 'forward') {

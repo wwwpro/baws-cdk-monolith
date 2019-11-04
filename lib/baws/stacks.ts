@@ -378,20 +378,22 @@ export class BawsStack extends Stack {
       item.listeners.forEach((listen: any) => {
         // Add listener rules.
         const taskPort =
-          typeof listen.listenerPort === "undefined" ? 443 : listen.listenerPort;
+          typeof listen.listenerPort === "undefined"
+            ? 443
+            : listen.listenerPort;
         const cfnListen = listenerPortsMap.get(taskPort);
         const listenerProps = new Services();
 
         if (typeof cfnListen !== "undefined") {
-          const legacyPriority =
-            typeof item.priority !== "undefined" ? item.priority : counter;
+          listen.priority =
+            typeof listen.priority !== "undefined" ? listen.priority : counter;
+
           const listenerRule = new CfnListenerRule(
             this,
             `baws-listener-rule-${item.name}-${counter}`,
             listenerProps.getListenerRuleProps(item, {
               listenerRef: cfnListen.ref,
-              targetRef: target.ref,
-              legacyPriority
+              targetRef: target.ref
             })
           );
           listenerRule.addDependsOn(cfnListen);
