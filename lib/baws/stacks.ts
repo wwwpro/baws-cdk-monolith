@@ -364,7 +364,7 @@ export class BawsStack extends Stack {
         ) {
           const listen = new CfnListener(
             this,
-            `baws-listener-${item.listenerPort}`,
+            `baws-listener-${listener.listenerPort}`,
             ALB.getListenerProps({
               port: listener.listenerPort,
               albArn: alb.ref,
@@ -373,7 +373,7 @@ export class BawsStack extends Stack {
             })
           );
   
-          listenerPortsMap.set(item.listenerPort, listen);
+          listenerPortsMap.set(listener.listenerPort, listen);
         }
       });
 
