@@ -16,4 +16,5 @@ config.yml
 # We need cfn-response to live as JS in its folder, because its 
 # uploaded as a packaged lambda function.
 
+
 !/lib/vpc/routeTableFunction/cfn-response/*
