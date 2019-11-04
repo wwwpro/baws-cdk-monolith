@@ -357,23 +357,26 @@ export class BawsStack extends Stack {
       targetRefs.push(target.ref);
 
       // Add new listener if it's a new port we haven't create yet.
-      if (
-        typeof item.listenerPort !== "undefined" &&
-        typeof listenerPortsMap.get(item.listnerPort) === "undefined"
-      ) {
-        const listen = new CfnListener(
-          this,
-          `baws-listener-${item.listenerPort}`,
-          ALB.getListenerProps({
-            port: item.listenerPort,
-            albArn: alb.ref,
-            sslArn,
-            targetRef: targetGroup.ref
-          })
-        );
+      item.listeners.forEach((listener:any) => {
+        if (
+          typeof listener.listenerPort !== "undefined" &&
+          typeof listenerPortsMap.get(listener.listnerPort) === "undefined"
+        ) {
+          const listen = new CfnListener(
+            this,
+            `baws-listener-${item.listenerPort}`,
+            ALB.getListenerProps({
+              port: listener.listenerPort,
+              albArn: alb.ref,
+              sslArn,
+              targetRef: targetGroup.ref
+            })
+          );
+  
+          listenerPortsMap.set(item.listenerPort, listen);
+        }
+      });
 
-        listenerPortsMap.set(item.listenerPort, listen);
-      }
 
       item.listeners.forEach((listen: any) => {
         // Add listener rules.
