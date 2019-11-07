@@ -1,21 +1,19 @@
-name: example-app
+name: phpmyadmin
 desiredCount: 1
-priority: 1000
 imageURI: phpmyadmin/phpmyadmin
-listenerPort: 10000
 listeners:
-  - condition: host-header
+  - type: host-header
+    priority: 1000
+    listenerPort: 10000
     hosts:
     - "*.example.com"
     - example.com
-createECR: true
+createECR: false
 type: ec2
 hardMemoryLimit: 512
 softMemoryLimit: 128
 hostPort: 0
 containerPort: 80
-# Optional. Defaults to 443. 
-# listenerPort: 443
 cpuUnits: 256
 logRegion: us-east-1
 # values passed directly to the container

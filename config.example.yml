@@ -117,22 +117,29 @@ ecs:
   # defined below will be created. Either comment the `tasksDir` or delete the tasks object below,
   # if you don't want corresponding tasks or servics to be created.
   
-  configDir: config/ecs/tasks
+  configDir: config/ecs
   tasks:
     - name: baws-app
       # If create ecr is set to true the URI for that repo will automatically be used, and override
       # 
       imageURI: nginx:alpine
-      priority: 100
       createECR: true
       # To disable the service, set this to 0.
       desiredCount: 4
       listeners:
-      # Only one host condition is currently supported
-        - condition:
+      # Only one forward rule is currently supported
+        - type: forward
+          priority: 100
           hosts: 
           - "*.example.com"
           - example.com
+        # Uncomment below to create domain redirects.
+        # - type: redirect
+          # priority: 110
+          # from: 
+            # - "*.olddomain.com"
+            # - "olddomain.com"
+          # to: www.newdomain.com
       
       type: ec2
       # The amount reserved for your app. If this is too big, and your server doesn't have enough space,
@@ -200,5 +207,5 @@ notifications:
     pipelineNameReference: baws-pipeline
     # Info on setting up a slack hook here: 
     # https://api.slack.com/slack-apps
-    slackChannel: aws
-    slackURL: 
+    # slackChannel: aws
+    # slackURL: 

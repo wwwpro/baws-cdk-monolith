@@ -1,6 +1,8 @@
 name: example-app
 desiredCount: 2
+# Range from 1-50000. Increments of 100 recommended to allow granular flexibility.
 priority: 200
+# Replace with your ECR address after it's up and running.
 imageURI: nginx:alpine
 listeners:
   - condition: host-header
@@ -9,18 +11,23 @@ listeners:
     - example.com
 createECR: true
 type: ec2
+# The container will be killed if it exceeds this amount.
 hardMemoryLimit: 1024
+# The amount reserved on the server. The container can surpass this, 
+# un until the hardMemoryLimit, as long as there is space.
 softMemoryLimit: 256
 hostPort: 0
 containerPort: 80
-# Optional. Defaults to 443. 
+# Optional. Defaults to 443 if left uncommented.
 # listenerPort: 443
 cpuUnits: 256
 logRegion: us-east-1
-# values passed directly to the container
+# Values passed directly to the container
 variables:
-#  NGINX_ENABLED: drupal
-#  WEBROOT: web
+  # NGINX_ENABLED: drupal
+  # WEBROOT: web
+  # PHP options will alter the config. For wwwpro/lep container.
+
 # values retreived from the parameter store
 # Underscored values listed here, for instance db_name, db_user, db_host must be created 
 # in the parameter store before using them.
@@ -38,7 +45,7 @@ params:
 volumes:
   # EFS: /mnt/efs/website-name/assets
   # PRIVATE: /mnt/efs/website-name/private
-  # TMP: /mnt/efs/tmp/website-name
+  # TMP: /mnt/efs/website-name/tmp
 mounts:
   # Drupal
   # EFS: /var/www/html/web/sites/default/files

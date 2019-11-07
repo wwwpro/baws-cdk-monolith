@@ -7,10 +7,12 @@ import {
 } from "@aws-cdk/aws-ecs";
 import {
   CfnListener,
-  CfnListenerRuleProps
+  CfnListenerRuleProps,
+  CfnListenerProps
 } from "@aws-cdk/aws-elasticloadbalancingv2";
 
 import { CfnRole } from "@aws-cdk/aws-iam";
+import { RedirectProtocol } from "@aws-cdk/aws-s3";
 
 export class Services {
   targetRefs: string[] = [];
@@ -44,12 +46,25 @@ export class Services {
     };
   }
 
-  public static getHostListenerProps(
-    configItem: any,
-    props: any,
-  ): CfnListenerRuleProps {
-    const hosts: string[] = configItem.listeners[0].hosts;
+  public getListenerRuleProps = (
+    config: any,
+    props: any
+  ): CfnListenerRuleProps => {
+    let listenerProps: CfnListenerRuleProps;
 
+    if (config.type == 'forward') {
+      listenerProps = this.getHostListenerProps(config, props);
+    }else {
+      listenerProps = this.getRedirectListenerProps(config, props);
+    }
+    
+    return listenerProps;
+  };
+
+  private getHostListenerProps = (
+    configItem: any,
+    props: any
+  ): CfnListenerRuleProps => {
     return {
       actions: [
         {
@@ -61,12 +76,43 @@ export class Services {
         {
           field: "host-header",
           hostHeaderConfig: {
-            values: hosts
+            values: configItem.hosts
           }
         }
       ],
       listenerArn: props.listenerRef,
-      priority: props.priority
+      priority: configItem.priority
+    };
+  };
+
+  private getRedirectListenerProps(
+    configItem: any,
+    props: any
+  ): CfnListenerRuleProps {
+    return {
+      actions: [
+        {
+          type: "redirect",
+          redirectConfig: {
+            statusCode: "HTTP_301",
+            protocol: "HTTPS",
+            port: "443",
+            path: "/#{path}",
+            query: "#{query}",
+            host: configItem.to
+          }
+        }
+      ],
+      conditions: [
+        {
+          field: "host-header",
+          hostHeaderConfig: {
+            values: configItem.from
+          }
+        }
+      ],
+      listenerArn: props.listenerRef,
+      priority: configItem.priority
     };
   }
 
@@ -103,7 +149,6 @@ export class Services {
 
     const containerPort = configItem.containerPort;
     const containerName = configItem.name;
-
   }
 }
 

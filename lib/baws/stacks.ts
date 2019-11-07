@@ -357,47 +357,54 @@ export class BawsStack extends Stack {
       targetRefs.push(target.ref);
 
       // Add new listener if it's a new port we haven't create yet.
-      if (
-        typeof item.listenerPort !== "undefined" &&
-        typeof listenerPortsMap.get(item.listnerPort) === "undefined"
-      ) {
-        const listen = new CfnListener(
-          this,
-          `baws-listener-${item.listenerPort}`,
-          ALB.getListenerProps({
-            port: item.listenerPort,
-            albArn: alb.ref,
-            sslArn,
-            targetRef: targetGroup.ref
-          })
-        );
+      item.listeners.forEach((listener:any) => {
+        if (
+          typeof listener.listenerPort !== "undefined" &&
+          typeof listenerPortsMap.get(listener.listnerPort) === "undefined"
+        ) {
+          const listen = new CfnListener(
+            this,
+            `baws-listener-${listener.listenerPort}`,
+            ALB.getListenerProps({
+              port: listener.listenerPort,
+              albArn: alb.ref,
+              sslArn,
+              targetRef: targetGroup.ref
+            })
+          );
+  
+          listenerPortsMap.set(listener.listenerPort, listen);
+        }
+      });
 
-        listenerPortsMap.set(item.listenerPort, listen);
-      }
 
-      // Add a listener
-      const taskPort =
-        typeof item.listenerPort === "undefined" ? 443 : item.listenerPort;
-      const cfnListen = listenerPortsMap.get(taskPort);
+      item.listeners.forEach((listen: any) => {
+        // Add listener rules.
+        const taskPort =
+          typeof listen.listenerPort === "undefined"
+            ? 443
+            : listen.listenerPort;
+        const cfnListen = listenerPortsMap.get(taskPort);
+        const listenerProps = new Services();
 
-      if (typeof cfnListen !== "undefined") {
-        const priority = (typeof item.priority !== 'undefined') ? item.priority : counter;
+        if (typeof cfnListen !== "undefined") {
+          listen.priority =
+            typeof listen.priority !== "undefined" ? listen.priority : counter;
 
-        this.node.addInfo(`Priority for ${item.name}: ${priority} `);
+          const listenerRule = new CfnListenerRule(
+            this,
+            `baws-listener-rule-${item.name}-${counter}`,
+            listenerProps.getListenerRuleProps(listen, {
+              listenerRef: cfnListen.ref,
+              targetRef: target.ref
+            })
+          );
+          listenerRule.addDependsOn(cfnListen);
+          listenerRule.addDependsOn(target);
 
-        const listenerRule = new CfnListenerRule(
-          this,
-          `baws-listener-rule-${item.name}`,
-          Services.getHostListenerProps(
-            item,
-            { listenerRef: cfnListen.ref, targetRef: target.ref, priority },
-          )
-        );
-        listenerRule.addDependsOn(cfnListen);
-        listenerRule.addDependsOn(target);
-
-        counter++;
-      }
+          counter++;
+        }
+      });
     });
 
     const scaling = new CfnAutoScalingGroup(
