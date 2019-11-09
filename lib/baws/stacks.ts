@@ -344,7 +344,7 @@ export class BawsStack extends Stack {
 
     let counter = 1;
 
-    // Build our targets, so we can associte the scaling groups.
+    // Build our targets, so we can associate the scaling groups.
     tasks.forEach((item: any) => {
       const target = new CfnTargetGroup(
         this,
@@ -360,7 +360,7 @@ export class BawsStack extends Stack {
       item.listeners.forEach((listener:any) => {
         if (
           typeof listener.listenerPort !== "undefined" &&
-          typeof listenerPortsMap.get(listener.listnerPort) === "undefined"
+          typeof listenerPortsMap.get(listener.listenerPort) === "undefined"
         ) {
           const listen = new CfnListener(
             this,
