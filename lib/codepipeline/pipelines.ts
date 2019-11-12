@@ -29,6 +29,7 @@ export class CodePipeline {
     props: PipelineProps
   ): CfnPipelineProps => {
     const projectName = `${configItem.name}-build`;
+
     let stages: CfnPipeline.StageDeclarationProperty[] = [
       this.getCodeCommitSource(
         configItem.repoNameReference,
@@ -36,6 +37,8 @@ export class CodePipeline {
       )
     ];
 
+    // Build stage is added if the config if available, but set to true,
+    // or if it's undefined. ECS pipelines will be undefined, but are required.
     if (
       (typeof configItem.createBuildStage !== "undefined" &&
         configItem.createBuildStage === true) ||
@@ -44,6 +47,8 @@ export class CodePipeline {
       stages.push(this.getBuildStage(projectName));
     }
 
+    // ECS builds have a taskNameReference, while S3 deployment
+    // will have a bucketNameReference
     if (typeof configItem.taskNameReference !== "undefined") {
       stages.push(
         this.getECSDeploy(
@@ -64,7 +69,6 @@ export class CodePipeline {
           deploymentPath
         )
       );
-
     }
 
     let pipelineProps: CfnPipelineProps = {
