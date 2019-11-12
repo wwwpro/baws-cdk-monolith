@@ -637,7 +637,7 @@ export class BawsStack extends Stack {
         // since it will be different based ont the uniqueid option.
         const bucket:any =  s3Buckets.find ( (bucketConfig:any) => bucketConfig.name == item.bucketNameReference);
         if (typeof bucket.bucketName !== 'undefined') {
-          item.bucketNameReference == bucket.bucketName;
+          item.bucketNameReference = bucket.bucketName;
         }
       }
 
