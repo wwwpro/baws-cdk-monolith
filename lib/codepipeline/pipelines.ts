@@ -242,7 +242,7 @@ export class CodePipeline {
             version: "1"
           },
           configuration: {
-            Bucketname: bucketName,
+            BucketName: bucketName,
             Extract: true,
             ObjectKey: deploymentPath
           }
