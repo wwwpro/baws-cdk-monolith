@@ -267,7 +267,7 @@ export class BawsStack extends Stack {
     // Prepare pipeeline variables.
     const s3Dir = YamlConfig.getDirConfigs(config.s3.configDir);
     const s3Config =
-      typeof config.codepipeline.pipelines !== "undefined"
+      typeof config.s3.buckets !== "undefined"
         ? config.s3.buckets
         : [];
     const s3Buckets: any[] = [...s3Dir, ...s3Config];
@@ -635,7 +635,7 @@ export class BawsStack extends Stack {
       if (typeof item.bucketNameReference !== 'undefined') {
         // If it's an s3 pipeline, we need to lookup the bucket and provide the final name,
         // since it will be different based ont the uniqueid option.
-        const bucket:any =  s3Buckets.find ( (bucketConfig:any) => bucketConfig.name == item.name);
+        const bucket:any =  s3Buckets.find ( (bucketConfig:any) => bucketConfig.name == item.bucketNameReference);
         if (typeof bucket.bucketName !== 'undefined') {
           item.bucketNameReference == bucket.bucketName;
         }

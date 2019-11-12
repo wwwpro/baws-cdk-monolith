@@ -109,9 +109,12 @@ cache:
       engine: memcached
       clusterSize: 1
 commitRepo:
+  # configDir: config/code-commit
   repos:
     - name: baws-app
       description: baws cdk app
+    # - name: baws-app-static
+    #   description: Static app hosted and deployed on s3.
 ecs:
   clusterName: baws-cluster
   # Example files included in the corresponding directories below. Uncomment to use them.

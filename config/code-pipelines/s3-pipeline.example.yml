@@ -1,11 +1,9 @@
-name: baws-pipeline
-type: ecs
+name: baws-pipeline-s3
 # must match repo name defined in codecommit.
-repoNameReference: baws-app
+repoNameReference: baws-static-app
 branchToWatch: master
 # This can optionally be an existing S3 bucket,
 # but a bucket configured in this CDK is recommended.
 bucketNameReference: baws-assets
-# must match `name` under ecs.clusterName
 createBuildStage: true
 # deploymentPath: app
