@@ -42,7 +42,7 @@ export class CodePipeline {
     if (
       (typeof configItem.createBuildStage !== "undefined" &&
         configItem.createBuildStage === true) ||
-      configItem.createBuildStage === "undefined"
+      typeof configItem.createBuildStage === "undefined"
     ) {
       stages.push(this.getBuildStage(projectName));
     }
