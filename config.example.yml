@@ -4,6 +4,7 @@ vpc:
   baseAddress: "10.0.0.0"
   baseCidrSize: "24"
 s3:
+  # configDir: config/s3
   buckets:
     # You may make as many buckets as you like but you must create at least one of each.
     # One assets, one artifacts, and one logs. The first of each created will be used for 
@@ -73,6 +74,7 @@ scaling:
     storageSize: 50
     efs: true
 rds:
+  # configDir: config/ecs
   clusterName: baws-cluster
   # `aurora` is the most compatible and feature complete version of Aurora.
   # Other available options detailed here: 
@@ -98,7 +100,7 @@ rds:
   instanceType: db.t3.small
   clusterSize: 1
 cache:
-  # filesDir: ./config/cache
+  # configDir: ./config/cache
   clusters:
     - name: baws-cache
       hostParamName: cache-host

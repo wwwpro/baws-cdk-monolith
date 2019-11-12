@@ -264,9 +264,19 @@ export class BawsStack extends Stack {
       efsId = efs.ref;
     }
 
-    config.s3.buckets.forEach((item: any) => {
+    // Prepare pipeeline variables.
+    const s3Dir = YamlConfig.getDirConfigs(config.s3.configDir);
+    const s3Config =
+      typeof config.codepipeline.pipelines !== "undefined"
+        ? config.s3.buckets
+        : [];
+    const s3Buckets: any[] = [...s3Dir, ...s3Config];
+
+    s3Buckets.forEach((item: any, index:number) => {
       const bucketName =
         item.addUniqueId === true ? `${item.name}-${this.account}` : item.name;
+      s3Buckets[index].bucketName = bucketName;
+
       const bucket = new CfnBucket(this, `baws-s3-${item.name}`, {
         bucketName
       });
@@ -357,7 +367,7 @@ export class BawsStack extends Stack {
       targetRefs.push(target.ref);
 
       // Add new listener if it's a new port we haven't create yet.
-      item.listeners.forEach((listener:any) => {
+      item.listeners.forEach((listener: any) => {
         if (
           typeof listener.listenerPort !== "undefined" &&
           typeof listenerPortsMap.get(listener.listenerPort) === "undefined"
@@ -372,11 +382,10 @@ export class BawsStack extends Stack {
               targetRef: targetGroup.ref
             })
           );
-  
+
           listenerPortsMap.set(listener.listenerPort, listen);
         }
       });
-
 
       item.listeners.forEach((listen: any) => {
         // Add listener rules.
@@ -622,6 +631,15 @@ export class BawsStack extends Stack {
           logGroupName: `/codebuild/${item.name}`
         }
       );
+
+      if (typeof item.bucketNameReference !== 'undefined') {
+        // If it's an s3 pipeline, we need to lookup the bucket and provide the final name,
+        // since it will be different based ont the uniqueid option.
+        const bucket:any =  s3Buckets.find ( (bucketConfig:any) => bucketConfig.name == item.name);
+        if (typeof bucket.bucketName !== 'undefined') {
+          item.bucketNameReference == bucket.bucketName;
+        }
+      }
 
       const pipelineRole = new CfnRole(
         this,

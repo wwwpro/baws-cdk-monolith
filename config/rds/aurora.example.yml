@@ -1,0 +1,24 @@
+  # clusterName, dbHostParam and dbROHostParamName must be unique for every cluster.
+  clusterName: baws-cluster
+  dbHostParamName: db-host
+  dbROHostParamName: db-ro-host
+  # `aurora` is the most compatible and feature complete version of Aurora.
+  # Other available options detailed here: 
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html
+  auroraEngine: aurora
+  # This must correlate to the option above. Details here: 
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbclusterparametergroup.html
+  paramFamily: aurora5.6
+  paramGroupName: baws-56
+  backupRetention: 7
+  # This is the parameter name stored in the parameter store.
+  # Create these either by using the command line from below (only from a secure terminal)
+  # Or by creating the parameter manually through the console.
+  masterUsernameSSM: db-master-user
+  masterPasswordSSM: db-master-pass
+  masterPasswordVersion: 1
+  # `dbHostParamName` and `dbROHostParamName` will set SSM values upon creation.
+  # The value listed under each key can be used by services which need the database host value.
+
+  instanceType: db.t3.small
+  clusterSize: 1
