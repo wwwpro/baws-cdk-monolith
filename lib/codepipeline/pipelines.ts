@@ -225,6 +225,17 @@ export class CodePipeline {
   ): CfnPipeline.StageDeclarationProperty => {
     const inputArtifactName = createBuildStage ? "app-build" : "app-source";
 
+    let configuration: any = {
+      BucketName: bucketName,
+      Extract: true,
+    };
+
+    // Validation errors if ObjectKey is empty, so we don't add
+    // unless we have an actual value.
+    if (deploymentPath.length >= 1) {
+      configuration.ObjectKey = deploymentPath;
+    }
+
     return {
       name: "ecs-deploy",
       actions: [
@@ -241,11 +252,7 @@ export class CodePipeline {
             provider: "S3",
             version: "1"
           },
-          configuration: {
-            BucketName: bucketName,
-            Extract: true,
-            ObjectKey: deploymentPath
-          }
+          configuration
         }
       ]
     };
