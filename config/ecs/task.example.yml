@@ -2,11 +2,12 @@ name: example-app
 desiredCount: 2
 # Replace with your ECR address after it's up and running.
 imageURI: nginx:alpine
+# healthCheckPath: /
+# healthCheckProtocol: HTTP
 listeners:
   - type: forward
     # Range from 1-50000. Increments of 100 recommended to allow granular flexibility.
     priority: 200
-    healthCheckPath: /
     hosts:
     - "*.example.com"
     - example.com
@@ -17,6 +18,7 @@ hardMemoryLimit: 1024
 # The amount reserved on the server. The container can surpass this, 
 # un until the hardMemoryLimit, as long as there is space.
 softMemoryLimit: 256
+# protocol: HTTP
 hostPort: 0
 containerPort: 80
 # Optional. Defaults to 443 if left uncommented.

@@ -1,0 +1,19 @@
+name: baws cdn
+enabled: true
+# Do not use one of the default buckets for an S3 origin.
+origins:
+  # - loadBalancerReferenceName
+  # - s3BucketReferenceName
+# REQUIRED. Change to valid certificate arn.
+certificateArn: arn:aws:acm:us-east-1:12345679:certificate/5295d80a-3498-464b-8261-8695afd2adb4
+# https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PriceClass.html
+# PriceClass_100 | PriceClass_200 | PriceClass_ALL
+priceClass: PriceClass_100
+# @todo implement cookieless asset behaviors.
+enableCookielessAssets: true
+enablePostRequests: true
+# Must be unique per account. You cannot have domains listed here which also belong to 
+# other distributions
+cnames:
+  - example.com
+  - '*.example.com'

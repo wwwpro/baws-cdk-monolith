@@ -4,6 +4,7 @@ vpc:
   baseAddress: "10.0.0.0"
   baseCidrSize: "24"
 s3:
+  # configDir: config/s3
   buckets:
     # You may make as many buckets as you like but you must create at least one of each.
     # One assets, one artifacts, and one logs. The first of each created will be used for 
@@ -41,6 +42,7 @@ cdn:
         - '*.example.com'
 alb:
   name: baws-alb
+  # certifcateArn: arn:aws:acm:us-east-1:12345679:certificate/5295d80a-3498-464b-8261-8695afd2adb4
 efs:
   name: baws efs
   encrypted: false
@@ -73,6 +75,7 @@ scaling:
     storageSize: 50
     efs: true
 rds:
+  # configDir: config/ecs
   clusterName: baws-cluster
   # `aurora` is the most compatible and feature complete version of Aurora.
   # Other available options detailed here: 
@@ -98,7 +101,7 @@ rds:
   instanceType: db.t3.small
   clusterSize: 1
 cache:
-  # filesDir: ./config/cache
+  # configDir: ./config/cache
   clusters:
     - name: baws-cache
       hostParamName: cache-host
@@ -107,9 +110,12 @@ cache:
       engine: memcached
       clusterSize: 1
 commitRepo:
+  # configDir: config/code-commit
   repos:
     - name: baws-app
       description: baws cdk app
+    # - name: baws-app-static
+    #   description: Static app hosted and deployed on s3.
 ecs:
   clusterName: baws-cluster
   # Example files included in the corresponding directories below. Uncomment to use them.
@@ -170,6 +176,7 @@ ecs:
         # DB_NAME: db_name
         # DB_USER: db_user
         # DB_PASS: db_pass
+          # VERSION: 1
         # REDIS_HOST: redis_host
         # REDIS_PREFIX: redis_prefix
       # Host volumes. Names here will be available as mount points in the bind section

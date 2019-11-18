@@ -1,5 +1,10 @@
 import { StackProps } from "@aws-cdk/core";
-import { CfnPipeline, ActionCategory, CfnPipelineProps } from "@aws-cdk/aws-codepipeline";
+import {
+  CfnPipeline,
+  ActionCategory,
+  CfnPipelineProps,
+  StageProps
+} from "@aws-cdk/aws-codepipeline";
 import { CfnBucket } from "@aws-cdk/aws-s3";
 import { Role, CfnRole, CfnRoleProps } from "@aws-cdk/aws-iam";
 import { CfnProject, CfnProjectProps } from "@aws-cdk/aws-codebuild";
@@ -17,46 +22,87 @@ export class CodePipeline {
   config: any;
   props: pipelineConfig;
 
-  // And here we... go...
   constructor() {}
 
-  public getCodePipelineProps = (configItem: any, props: PipelineProps):CfnPipelineProps => {
+  public getCodePipelineProps = (
+    configItem: any,
+    props: PipelineProps
+  ): CfnPipelineProps => {
     const projectName = `${configItem.name}-build`;
-    return ({
+
+    let stages: CfnPipeline.StageDeclarationProperty[] = [
+      this.getCodeCommitSource(
+        configItem.repoNameReference,
+        configItem.branchToWatch
+      )
+    ];
+
+    // Build stage is added if the config if available, but set to true,
+    // or if it's undefined. ECS pipelines will be undefined, but are required.
+    if (
+      (typeof configItem.createBuildStage !== "undefined" &&
+        configItem.createBuildStage === true) ||
+      typeof configItem.createBuildStage === "undefined"
+    ) {
+      stages.push(this.getBuildStage(projectName));
+    }
+
+    // ECS builds have a taskNameReference, while S3 deployment
+    // will have a bucketNameReference
+    if (typeof configItem.taskNameReference !== "undefined") {
+      stages.push(
+        this.getECSDeploy(
+          configItem.clusterNameReference,
+          configItem.taskNameReference
+        )
+      );
+    } else if (typeof configItem.bucketNameReference !== "undefined") {
+      const deploymentPath =
+        typeof configItem.deploymentPath !== "undefined"
+          ? configItem.deploymentPath
+          : "";
+
+      stages.push(
+        this.getS3Deploy(
+          configItem.bucketNameReference,
+          configItem.createBuildStage,
+          deploymentPath
+        )
+      );
+    }
+
+    let pipelineProps: CfnPipelineProps = {
       roleArn: props.pipelineRole.attrArn,
       name: configItem.name,
       artifactStore: {
         type: "S3",
         location: props.bucketName
       },
-      stages: [
-        this.getCodeCommitSource(
-          configItem.repoNameReference,
-          configItem.branchToWatch
-        ),
-        this.getBuildStage(projectName),
-        this.getECSDeploy(
-          configItem.clusterNameReference,
-          configItem.taskNameReference
-        )
-      ]
-    });
-  }
+      stages
+    };
 
-  public getBuildProps = (props: BuildProps ):CfnProjectProps => {
-    let environmentVariables:CfnProject.EnvironmentVariableProperty[] = [];
-    if (typeof props.taskName !== 'undefined' && typeof props.taskURI !== 'undefined') {
-      environmentVariables = [{
-        name: "CONTAINER_NAME",
-        value: props.taskName
-      },
-      {
-        name: "REPOSITORY_URI",
-        value: props.taskURI
-      }];
+    return pipelineProps;
+  };
+
+  public getBuildProps = (props: BuildProps): CfnProjectProps => {
+    let environmentVariables: CfnProject.EnvironmentVariableProperty[] = [];
+    if (
+      typeof props.taskName !== "undefined" &&
+      typeof props.taskURI !== "undefined"
+    ) {
+      environmentVariables = [
+        {
+          name: "CONTAINER_NAME",
+          value: props.taskName
+        },
+        {
+          name: "REPOSITORY_URI",
+          value: props.taskURI
+        }
+      ];
     }
 
-    return({
+    return {
       name: props.name,
       artifacts: {
         type: "CODEPIPELINE"
@@ -78,8 +124,8 @@ export class CodePipeline {
         environmentVariables
       },
       serviceRole: props.buildRoleArn
-    });
-  }
+    };
+  };
 
   private getCodeCommitSource = (
     repoName: string,
@@ -172,8 +218,48 @@ export class CodePipeline {
     };
   };
 
-  public getPipelineRoleProps = (name:string): CfnRoleProps => {
-    return ({
+  private getS3Deploy = (
+    bucketName: string,
+    createBuildStage: boolean = true,
+    deploymentPath: string = ""
+  ): CfnPipeline.StageDeclarationProperty => {
+    const inputArtifactName = createBuildStage ? "app-build" : "app-source";
+
+    let configuration: any = {
+      BucketName: bucketName,
+      Extract: true,
+    };
+
+    // Validation errors if ObjectKey is empty, so we don't add
+    // unless we have an actual value.
+    if (deploymentPath.length >= 1) {
+      configuration.ObjectKey = deploymentPath;
+    }
+
+    return {
+      name: "ecs-deploy",
+      actions: [
+        {
+          name: "ecs-deploy-action",
+          inputArtifacts: [
+            {
+              name: inputArtifactName
+            }
+          ],
+          actionTypeId: {
+            category: ActionCategory.DEPLOY,
+            owner: "AWS",
+            provider: "S3",
+            version: "1"
+          },
+          configuration
+        }
+      ]
+    };
+  };
+
+  public getPipelineRoleProps = (name: string): CfnRoleProps => {
+    return {
       roleName: `baws-pipeline-${name}`,
       assumeRolePolicyDocument: {
         Version: "2012-10-17",
@@ -257,64 +343,61 @@ export class CodePipeline {
           }
         }
       ]
-    });
+    };
   };
 
   public getBuildRoleProps = (props: BuildRoleProps): CfnRoleProps => {
-    
-      return ({
-        roleName: `baws-codebuild-${props.name}`,
-        assumeRolePolicyDocument: {
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Effect: "Allow",
-              Principal: {
-                Service: "codebuild.amazonaws.com"
-              },
-              Action: "sts:AssumeRole"
-            }
-          ]
-        },
-        managedPolicyArns: [
-          "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
-        ],
-        policies: [
+    return {
+      roleName: `baws-codebuild-${props.name}`,
+      assumeRolePolicyDocument: {
+        Version: "2012-10-17",
+        Statement: [
           {
-            policyName: `baws-codebuild-${this.id}`,
-            policyDocument: {
-              Version: "2012-10-17",
-              Statement: [
-                {
-                  Effect: "Allow",
-                  Resource: [
-                    `arn:aws:logs:${props.region}:${props.account}:log-group:codebuild/${props.name}`,
-                    `arn:aws:logs:${props.region}:${props.account}:log-group:codebuild/${props.name}:*`
-                  ],
-                  Action: [
-                    "logs:CreateLogGroup",
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents"
-                  ]
-                },
-                {
-                  Effect: "Allow",
-                  Resource: [`${props.bucketArn}*`],
-                  Action: [
-                    "s3:PutObject",
-                    "s3:GetObject",
-                    "s3:GetObjectVersion",
-                    "s3:GetBucketAcl",
-                    "s3:GetBucketLocation"
-                  ]
-                }
-              ]
-            }
+            Effect: "Allow",
+            Principal: {
+              Service: "codebuild.amazonaws.com"
+            },
+            Action: "sts:AssumeRole"
           }
         ]
-      }
-    );
-
+      },
+      managedPolicyArns: [
+        "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
+      ],
+      policies: [
+        {
+          policyName: `baws-codebuild-${this.id}`,
+          policyDocument: {
+            Version: "2012-10-17",
+            Statement: [
+              {
+                Effect: "Allow",
+                Resource: [
+                  `arn:aws:logs:${props.region}:${props.account}:log-group:codebuild/${props.name}`,
+                  `arn:aws:logs:${props.region}:${props.account}:log-group:codebuild/${props.name}:*`
+                ],
+                Action: [
+                  "logs:CreateLogGroup",
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ]
+              },
+              {
+                Effect: "Allow",
+                Resource: [`${props.bucketArn}*`],
+                Action: [
+                  "s3:PutObject",
+                  "s3:GetObject",
+                  "s3:GetObjectVersion",
+                  "s3:GetBucketAcl",
+                  "s3:GetBucketLocation"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    };
   };
 }
 
@@ -325,7 +408,7 @@ export interface PipelineProps {
 }
 
 export interface BuildRoleProps {
-  name:string;
+  name: string;
   region: string;
   account: string;
   bucketArn: string;
