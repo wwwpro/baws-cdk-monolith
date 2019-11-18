@@ -42,6 +42,7 @@ cdn:
         - '*.example.com'
 alb:
   name: baws-alb
+  # certifcateArn: arn:aws:acm:us-east-1:12345679:certificate/5295d80a-3498-464b-8261-8695afd2adb4
 efs:
   name: baws efs
   encrypted: false
@@ -175,6 +176,7 @@ ecs:
         # DB_NAME: db_name
         # DB_USER: db_user
         # DB_PASS: db_pass
+          # VERSION: 1
         # REDIS_HOST: redis_host
         # REDIS_PREFIX: redis_prefix
       # Host volumes. Names here will be available as mount points in the bind section
