@@ -79,7 +79,7 @@ export class RDS {
       "baws-rds-pass-lookup",
       {
         parameterName: config.masterPasswordSSM,
-        version: 1
+        version: config.masterPasswordVersion
       }
     );
 

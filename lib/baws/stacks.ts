@@ -547,20 +547,6 @@ export class BawsStack extends Stack {
           item.name
         );
 
-        if (
-          typeof item.updateEcrImage !== "undefined" &&
-          item.updateEcrImage === true
-        ) {
-          const asset = new DockerImageAsset(
-            this,
-            `baws-image-asset-${this.id}`,
-            {
-              directory: "../ecs/ecr-asset",
-              repositoryName: item.name
-            }
-          );
-        }
-
         ecrMap.set(item.name, uri.repositoryUri);
       }
 
