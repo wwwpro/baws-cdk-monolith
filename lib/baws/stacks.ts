@@ -402,12 +402,11 @@ export class BawsStack extends Stack {
         const listenerProps = new Services();
 
         if (typeof cfnListen !== "undefined") {
-          listen.priority =
-            typeof listen.priority !== "undefined" ? listen.priority : counter;
+          const listenerName = typeof listen.name !== 'undefined' ? listen.name : listen.priority
 
           const listenerRule = new CfnListenerRule(
             this,
-            `baws-listener-rule-${item.name}-${counter}`,
+            `baws-listener-rule-${item.name}-${listenerName}`,
             listenerProps.getListenerRuleProps(listen, {
               listenerRef: cfnListen.ref,
               targetRef: target.ref

@@ -6,6 +6,8 @@ imageURI: nginx:alpine
 # healthCheckProtocol: HTTP
 listeners:
   - type: forward
+    # Must be globally unique and stable. [a-z][A-Z][-_]
+    name: forward-example
     # Range from 1-50000. Increments of 100 recommended to allow granular flexibility.
     priority: 200
     hosts:
