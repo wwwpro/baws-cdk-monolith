@@ -89,6 +89,11 @@ export class BawsStack extends Stack {
     const bastionIps = this.node.tryGetContext("bastionIps");
     const sslArn = this.node.tryGetContext("SSLCertArn");
 
+    let sslArns:string[] = [sslArn];
+    if (typeof config.alb.certificates !== 'undefined') {
+      sslArns = [sslArn, ...config.alb.certificates];
+    }
+
     let listenerPortsMap: Map<number, CfnListener> = new Map();
 
     let ecrMap: Map<string, string> = new Map();

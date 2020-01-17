@@ -42,7 +42,8 @@ cdn:
         - '*.example.com'
 alb:
   name: baws-alb
-  # certifcateArn: arn:aws:acm:us-east-1:12345679:certificate/5295d80a-3498-464b-8261-8695afd2adb4
+  # certifcates: 
+  # - arn:aws:acm:us-east-1:12345679:certificate/5295d80a-3498-464b-8261-8695afd2adb4
 efs:
   name: baws efs
   encrypted: false
