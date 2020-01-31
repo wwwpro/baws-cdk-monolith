@@ -2,7 +2,7 @@ name: phpmyadmin
 desiredCount: 1
 imageURI: phpmyadmin/phpmyadmin
 listeners:
-  - type: host-header
+  - type: forward
     priority: 1000
     listenerPort: 10000
     hosts:
