@@ -52,6 +52,7 @@ export class Tasks {
         });
       }
     }
+    const networkMode = (typeof configItem.network !== 'undefined')? configItem.network : 'bridge'
 
     // Our configItem. We use nginx:alpine to start. This is to provide a simple mechanism
     // for returning a 200 code, until we can deploy our actual container to this taskthrough a pipeline.
@@ -84,6 +85,7 @@ export class Tasks {
           essential: true
         }
       ],
+      networkMode,
       executionRoleArn: props.executionRoleRef,
       volumes
     };
