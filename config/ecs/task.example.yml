@@ -6,6 +6,8 @@ imageURI: nginx:alpine
 # healthCheckProtocol: HTTP
 listeners:
   - type: forward
+    # Must be globally unique and stable. [a-z][A-Z][-_]
+    name: forward-example
     # Range from 1-50000. Increments of 100 recommended to allow granular flexibility.
     priority: 200
     hosts:
@@ -25,14 +27,17 @@ containerPort: 80
 # listenerPort: 443
 cpuUnits: 256
 logRegion: us-east-1
-# Values passed directly to the container
+# Values passed directly to the container. Do not include sensitive info here. 
 variables:
   # NGINX_ENABLED: drupal
   # WEBROOT: web
-  # PHP options will alter the config. For wwwpro/lep container.
+  # DB_PORT: 3306
+  #:: Django
+  # DJANGO_STATIC_URL: /assets/
+  # DJANGO_CACHE_PREFIX: prod_
 
-# values retreived from the parameter store
-# Underscored values listed here, for instance db_name, db_user, db_host must be created 
+# Values retreived from the parameter store
+# Example underscored values listed here, for instance db_name, db_user, db_host must be created 
 # in the parameter store before using them.
 # Uncomment values according to usage.
 params:
@@ -43,6 +48,11 @@ params:
   # DB_PASS: db_pass
   # REDIS_HOST: redis_host
   # REDIS_PREFIX: redis_prefix
+  # :: Django vars for baws docker
+  # DJANGO_SECRET_KEY: django_secret_key
+  # DJANGO_CACHE_BACKEND: django_cache_backend
+  # DJANGO_CACHE_LOCATION: django_cache_location
+
 # Host volumes. Names here will be available as mount points in the bind section
 # The key below `volumes` must have a corresponding volume key from above.
 volumes:
@@ -50,7 +60,7 @@ volumes:
   # PRIVATE: /mnt/efs/website-name/private
   # TMP: /mnt/efs/website-name/tmp
 mounts:
-  # Drupal
+  # :: Drupal
   # EFS: /var/www/html/web/sites/default/files
   # TMP: /var/www/html/tmp
   # PRIVATE: /var/www/html/private

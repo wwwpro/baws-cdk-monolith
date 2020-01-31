@@ -89,6 +89,11 @@ export class BawsStack extends Stack {
     const bastionIps = this.node.tryGetContext("bastionIps");
     const sslArn = this.node.tryGetContext("SSLCertArn");
 
+    let sslArns:string[] = [sslArn];
+    if (typeof config.alb.certificates !== 'undefined') {
+      sslArns = [sslArn, ...config.alb.certificates];
+    }
+
     let listenerPortsMap: Map<number, CfnListener> = new Map();
 
     let ecrMap: Map<string, string> = new Map();
@@ -397,12 +402,11 @@ export class BawsStack extends Stack {
         const listenerProps = new Services();
 
         if (typeof cfnListen !== "undefined") {
-          listen.priority =
-            typeof listen.priority !== "undefined" ? listen.priority : counter;
+          const listenerName = typeof listen.name !== 'undefined' ? listen.name : listen.priority
 
           const listenerRule = new CfnListenerRule(
             this,
-            `baws-listener-rule-${item.name}-${counter}`,
+            `baws-listener-rule-${item.name}-${listenerName}`,
             listenerProps.getListenerRuleProps(listen, {
               listenerRef: cfnListen.ref,
               targetRef: target.ref
@@ -546,20 +550,6 @@ export class BawsStack extends Stack {
           `baws-ecr-lookup-${item.name}`,
           item.name
         );
-
-        if (
-          typeof item.updateEcrImage !== "undefined" &&
-          item.updateEcrImage === true
-        ) {
-          const asset = new DockerImageAsset(
-            this,
-            `baws-image-asset-${this.id}`,
-            {
-              directory: "../ecs/ecr-asset",
-              repositoryName: item.name
-            }
-          );
-        }
 
         ecrMap.set(item.name, uri.repositoryUri);
       }
