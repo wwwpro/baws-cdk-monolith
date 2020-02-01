@@ -1,8 +1,5 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
-import {
-  CfnTaskDefinition,
-  CfnServiceProps
-} from "@aws-cdk/aws-ecs";
+import { CfnTaskDefinition, CfnServiceProps } from "@aws-cdk/aws-ecs";
 import {
   CfnListener,
   CfnListenerRuleProps,
@@ -21,10 +18,7 @@ export class Services {
   constructor() {}
 
   public static getServiceProps(configItem: any, props: any): CfnServiceProps {
-    const containerPort = configItem.containerPort;
-    const containerName = configItem.name;
-
-    return {
+    let result: CfnServiceProps = {
       serviceName: configItem.name,
       taskDefinition: props.taskRef,
       healthCheckGracePeriodSeconds: 60,
@@ -32,16 +26,28 @@ export class Services {
         minimumHealthyPercent: 50,
         maximumPercent: 200
       },
-      loadBalancers: [
-        {
-          containerPort,
-          containerName,
-          targetGroupArn: props.targetRef
-        }
-      ],
+
       cluster: props.clusterName,
       desiredCount: configItem.desiredCount
     };
+
+    if (typeof configItem.listensers !== "undefined") {
+      const containerPort = configItem.containerPort;
+      const containerName = configItem.name;
+      const alb = {
+        loadBalancers: [
+          {
+            containerPort,
+            containerName,
+            targetGroupArn: props.targetRef
+          }
+        ]
+      };
+
+      result = { ...result, ...alb };
+    }
+
+    return result;
   }
 
   public getListenerRuleProps = (
@@ -50,12 +56,12 @@ export class Services {
   ): CfnListenerRuleProps => {
     let listenerProps: CfnListenerRuleProps;
 
-    if (config.type == 'forward') {
+    if (config.type == "forward") {
       listenerProps = this.getHostListenerProps(config, props);
-    }else {
+    } else {
       listenerProps = this.getRedirectListenerProps(config, props);
     }
-    
+
     return listenerProps;
   };
 
