@@ -31,7 +31,7 @@ export class Services {
       desiredCount: configItem.desiredCount
     };
 
-    if (typeof configItem.listensers !== "undefined") {
+    if (typeof configItem.listeners !== "undefined") {
       const containerPort = configItem.containerPort;
       const containerName = configItem.name;
       const alb = {
