@@ -367,7 +367,7 @@ export class BawsStack extends Stack {
       // @todo support IP based targets.
       // There are no associated listeners if network type is awsvpc.
       if (typeof item.listeners !== "undefined") {
-        
+
         const target = new CfnTargetGroup(
           this,
           `baws-target-${item.name}`,
@@ -577,6 +577,14 @@ export class BawsStack extends Stack {
 
       const target = targetMap.get(item.name);
 
+
+      let serviceProps = {
+        targetRef: target,
+        taskRef: task.ref,
+        clusterName: cluster.clusterName
+      };
+
+      // awsvpc requires network security group and subnets. 
       if (typeof item.network !== "undefined" && item.network == "awsvpc") {
         const serviceSecurity = new CfnSecurityGroup(
           this,
@@ -588,16 +596,14 @@ export class BawsStack extends Stack {
           subnets: subnetIds,
           securityGroups: [serviceSecurity.ref]
         };
+
+        serviceProps = {...serviceProps, ...networkConfiguration};
       }
 
       const service = new CfnService(
         this,
         `baws-services-${item.name}`,
-        Services.getServiceProps(item, {
-          targetRef: target,
-          taskRef: task.ref,
-          clusterName: cluster.clusterName
-        })
+        Services.getServiceProps(item, serviceProps)
       );
       service.addDependsOn(alb);
       service.addDependsOn(task);
