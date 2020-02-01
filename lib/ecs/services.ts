@@ -21,7 +21,6 @@ export class Services {
     let result: CfnServiceProps = {
       serviceName: configItem.name,
       taskDefinition: props.taskRef,
-      healthCheckGracePeriodSeconds: 60,
       deploymentConfiguration: {
         minimumHealthyPercent: 50,
         maximumPercent: 200
@@ -35,6 +34,7 @@ export class Services {
       const containerPort = configItem.containerPort;
       const containerName = configItem.name;
       const alb = {
+        healthCheckGracePeriodSeconds: 60,
         loadBalancers: [
           {
             containerPort,
