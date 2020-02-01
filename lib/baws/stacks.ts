@@ -372,26 +372,33 @@ export class BawsStack extends Stack {
       targetMap.set(item.name, target.ref);
       targetRefs.push(target.ref);
 
-      // Add new listener if it's a new port we haven't create yet.
-      item.listeners.forEach((listener: any) => {
-        if (
-          typeof listener.listenerPort !== "undefined" &&
-          typeof listenerPortsMap.get(listener.listenerPort) === "undefined"
-        ) {
-          const listen = new CfnListener(
-            this,
-            `baws-listener-${listener.listenerPort}`,
-            ALB.getListenerProps({
-              port: listener.listenerPort,
-              albArn: alb.ref,
-              sslArn,
-              targetRef: targetGroup.ref
-            })
-          );
-
-          listenerPortsMap.set(listener.listenerPort, listen);
+      // @todo support IP based targets.
+      // There are no associated listeners if network type is awsvpc.
+      if (typeof item.listeners !== "undefined") {
+        // Just in case network was defined as awsvpc, but the listeners were
+        if (typeof item.network !== 'undefined' && item.network !== 'awsvpc') {
+          // Add new listener if it's a new port we haven't created yet.
+          item.listeners.forEach((listener: any) => {
+            if (
+              typeof listener.listenerPort !== "undefined" &&
+              typeof listenerPortsMap.get(listener.listenerPort) === "undefined"
+            ) {
+              const listen = new CfnListener(
+                this,
+                `baws-listener-${listener.listenerPort}`,
+                ALB.getListenerProps({
+                  port: listener.listenerPort,
+                  albArn: alb.ref,
+                  sslArn,
+                  targetRef: targetGroup.ref
+                })
+              );
+  
+              listenerPortsMap.set(listener.listenerPort, listen);
+            }
+          });
         }
-      });
+      }
 
       item.listeners.forEach((listen: any) => {
         // Add listener rules.

@@ -2,14 +2,6 @@
 name: solr
 desiredCount: 2
 imageURI: solr:7.7-slim
-listeners:
-  - type: forward
-    name: solr
-    listenerPort: 8983
-    priority: 990
-    hosts:
-    - origin.healthyplace.com
-    - pma.healthyplace.com
 createECR: true
 type: ec2
 hardMemoryLimit: 512
