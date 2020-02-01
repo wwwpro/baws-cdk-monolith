@@ -397,36 +397,37 @@ export class BawsStack extends Stack {
               listenerPortsMap.set(listener.listenerPort, listen);
             }
           });
+
+          item.listeners.forEach((listen: any) => {
+            // Add listener rules.
+            const taskPort =
+              typeof listen.listenerPort === "undefined"
+                ? 443
+                : listen.listenerPort;
+            const cfnListen = listenerPortsMap.get(taskPort);
+            const listenerProps = new Services();
+    
+            if (typeof cfnListen !== "undefined") {
+              const listenerName =
+                typeof listen.name !== "undefined" ? listen.name : listen.priority;
+    
+              const listenerRule = new CfnListenerRule(
+                this,
+                `baws-listener-rule-${item.name}-${listenerName}`,
+                listenerProps.getListenerRuleProps(listen, {
+                  listenerRef: cfnListen.ref,
+                  targetRef: target.ref
+                })
+              );
+              listenerRule.addDependsOn(cfnListen);
+              listenerRule.addDependsOn(target);
+    
+              counter++;
+            }
+          });
+
         }
       }
-
-      item.listeners.forEach((listen: any) => {
-        // Add listener rules.
-        const taskPort =
-          typeof listen.listenerPort === "undefined"
-            ? 443
-            : listen.listenerPort;
-        const cfnListen = listenerPortsMap.get(taskPort);
-        const listenerProps = new Services();
-
-        if (typeof cfnListen !== "undefined") {
-          const listenerName =
-            typeof listen.name !== "undefined" ? listen.name : listen.priority;
-
-          const listenerRule = new CfnListenerRule(
-            this,
-            `baws-listener-rule-${item.name}-${listenerName}`,
-            listenerProps.getListenerRuleProps(listen, {
-              listenerRef: cfnListen.ref,
-              targetRef: target.ref
-            })
-          );
-          listenerRule.addDependsOn(cfnListen);
-          listenerRule.addDependsOn(target);
-
-          counter++;
-        }
-      });
     });
 
     const scaling = new CfnAutoScalingGroup(
