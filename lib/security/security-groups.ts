@@ -2,10 +2,25 @@ import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import { CfnSecurityGroup, CfnSecurityGroupProps } from "@aws-cdk/aws-ec2";
 
 /**
- * All security groups needed for operations go here, and are passed to their respective
+ * All security groups needed for operations go here
  *
  */
 export class Security {
+
+  public static getGenericPrivateGroupProps (vpcId:string, port:number): CfnSecurityGroupProps {
+
+    return {
+      vpcId,
+      groupDescription: 'Created by baws CDK',
+      securityGroupIngress:[{
+        ipProtocol: 'tcp',
+        fromPort: port,
+        toPort: port,
+        cidrIp: "0.0.0.0/0"
+      }]
+    }
+
+  }
 
   public static getAlbGroupProps(vpcId:string, bastionIps: string[] = []): CfnSecurityGroupProps {
     let securityGroupIngress: CfnSecurityGroup.IngressProperty[] = [
@@ -36,7 +51,7 @@ export class Security {
     }
 
     return {
-      vpcId: vpcId,
+      vpcId,
       groupDescription: "Created by baws cdk",
       securityGroupIngress
     };

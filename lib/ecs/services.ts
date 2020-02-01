@@ -1,8 +1,6 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
 import {
-  ContainerDefinition,
   CfnTaskDefinition,
-  CfnService,
   CfnServiceProps
 } from "@aws-cdk/aws-ecs";
 import {
