@@ -376,57 +376,56 @@ export class BawsStack extends Stack {
       // There are no associated listeners if network type is awsvpc.
       if (typeof item.listeners !== "undefined") {
         // Just in case network was defined as awsvpc, but the listeners were
-        if (typeof item.network !== 'undefined' && item.network !== 'awsvpc') {
-          // Add new listener if it's a new port we haven't created yet.
-          item.listeners.forEach((listener: any) => {
-            if (
-              typeof listener.listenerPort !== "undefined" &&
-              typeof listenerPortsMap.get(listener.listenerPort) === "undefined"
-            ) {
-              const listen = new CfnListener(
-                this,
-                `baws-listener-${listener.listenerPort}`,
-                ALB.getListenerProps({
-                  port: listener.listenerPort,
-                  albArn: alb.ref,
-                  sslArn,
-                  targetRef: targetGroup.ref
-                })
-              );
-  
-              listenerPortsMap.set(listener.listenerPort, listen);
-            }
-          });
+        // Add new listener if it's a new port we haven't created yet.
+        item.listeners.forEach((listener: any) => {
+          if (
+            typeof listener.listenerPort !== "undefined" &&
+            typeof listenerPortsMap.get(listener.listenerPort) === "undefined"
+          ) {
+            const listen = new CfnListener(
+              this,
+              `baws-listener-${listener.listenerPort}`,
+              ALB.getListenerProps({
+                port: listener.listenerPort,
+                albArn: alb.ref,
+                sslArn,
+                targetRef: targetGroup.ref
+              })
+            );
 
-          item.listeners.forEach((listen: any) => {
-            // Add listener rules.
-            const taskPort =
-              typeof listen.listenerPort === "undefined"
-                ? 443
-                : listen.listenerPort;
-            const cfnListen = listenerPortsMap.get(taskPort);
-            const listenerProps = new Services();
-    
-            if (typeof cfnListen !== "undefined") {
-              const listenerName =
-                typeof listen.name !== "undefined" ? listen.name : listen.priority;
-    
-              const listenerRule = new CfnListenerRule(
-                this,
-                `baws-listener-rule-${item.name}-${listenerName}`,
-                listenerProps.getListenerRuleProps(listen, {
-                  listenerRef: cfnListen.ref,
-                  targetRef: target.ref
-                })
-              );
-              listenerRule.addDependsOn(cfnListen);
-              listenerRule.addDependsOn(target);
-    
-              counter++;
-            }
-          });
+            listenerPortsMap.set(listener.listenerPort, listen);
+          }
+        });
 
-        }
+        item.listeners.forEach((listen: any) => {
+          // Add listener rules.
+          const taskPort =
+            typeof listen.listenerPort === "undefined"
+              ? 443
+              : listen.listenerPort;
+          const cfnListen = listenerPortsMap.get(taskPort);
+          const listenerProps = new Services();
+
+          if (typeof cfnListen !== "undefined") {
+            const listenerName =
+              typeof listen.name !== "undefined"
+                ? listen.name
+                : listen.priority;
+
+            const listenerRule = new CfnListenerRule(
+              this,
+              `baws-listener-rule-${item.name}-${listenerName}`,
+              listenerProps.getListenerRuleProps(listen, {
+                listenerRef: cfnListen.ref,
+                targetRef: target.ref
+              })
+            );
+            listenerRule.addDependsOn(cfnListen);
+            listenerRule.addDependsOn(target);
+
+            counter++;
+          }
+        });
       }
     });
 
