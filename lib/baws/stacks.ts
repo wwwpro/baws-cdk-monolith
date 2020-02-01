@@ -89,8 +89,8 @@ export class BawsStack extends Stack {
     const bastionIps = this.node.tryGetContext("bastionIps");
     const sslArn = this.node.tryGetContext("SSLCertArn");
 
-    let sslArns:string[] = [sslArn];
-    if (typeof config.alb.certificates !== 'undefined') {
+    let sslArns: string[] = [sslArn];
+    if (typeof config.alb.certificates !== "undefined") {
       sslArns = [sslArn, ...config.alb.certificates];
     }
 
@@ -104,6 +104,7 @@ export class BawsStack extends Stack {
     let efsId: string | boolean = false;
 
     let publicSubnets: CfnSubnet[] = [];
+    let subnetIds: string[] = [];
 
     const bucketMap: Map<string, BucketProps> = new Map();
 
@@ -116,6 +117,7 @@ export class BawsStack extends Stack {
     const vpcId = vpc.ref;
     const azs = this.availabilityZones;
     const vpcPublicSubnets = VPC.getSubnetProps(vpc, azs, config.vpc);
+
     vpcPublicSubnets.forEach(item => {
       const subnet = new CfnSubnet(
         this,
@@ -124,6 +126,7 @@ export class BawsStack extends Stack {
       );
       subnet.addDependsOn(vpc);
       publicSubnets.push(subnet);
+      subnetIds.push(subnet.ref);
     });
 
     const gateway = new CfnInternetGateway(
@@ -272,12 +275,10 @@ export class BawsStack extends Stack {
     // Prepare pipeeline variables.
     const s3Dir = YamlConfig.getDirConfigs(config.s3.configDir);
     const s3Config =
-      typeof config.s3.buckets !== "undefined"
-        ? config.s3.buckets
-        : [];
+      typeof config.s3.buckets !== "undefined" ? config.s3.buckets : [];
     const s3Buckets: any[] = [...s3Dir, ...s3Config];
 
-    s3Buckets.forEach((item: any, index:number) => {
+    s3Buckets.forEach((item: any, index: number) => {
       const bucketName =
         item.addUniqueId === true ? `${item.name}-${this.account}` : item.name;
       s3Buckets[index].bucketName = bucketName;
@@ -402,7 +403,8 @@ export class BawsStack extends Stack {
         const listenerProps = new Services();
 
         if (typeof cfnListen !== "undefined") {
-          const listenerName = typeof listen.name !== 'undefined' ? listen.name : listen.priority
+          const listenerName =
+            typeof listen.name !== "undefined" ? listen.name : listen.priority;
 
           const listenerRule = new CfnListenerRule(
             this,
@@ -566,6 +568,19 @@ export class BawsStack extends Stack {
 
       const target = targetMap.get(item.name);
 
+      if (typeof item.network !== "undefined" && item.network == "awsvpc") {
+        const serviceSecurity = new CfnSecurityGroup(
+          this,
+          `baws-security-service-${item.name}`,
+          Security.getGenericPrivateGroupProps(vpcId, item.hostPort)
+        );
+
+        const networkConfiguration: CfnService.AwsVpcConfigurationProperty = {
+          subnets: subnetIds,
+          securityGroups: [serviceSecurity.ref]
+        };
+      }
+
       const service = new CfnService(
         this,
         `baws-services-${item.name}`,
@@ -622,11 +637,13 @@ export class BawsStack extends Stack {
         }
       );
 
-      if (typeof item.bucketNameReference !== 'undefined') {
+      if (typeof item.bucketNameReference !== "undefined") {
         // If it's an s3 pipeline, we need to lookup the bucket and provide the final name,
         // since it will be different based ont the uniqueid option.
-        const bucket:any =  s3Buckets.find ( (bucketConfig:any) => bucketConfig.name == item.bucketNameReference);
-        if (typeof bucket.bucketName !== 'undefined') {
+        const bucket: any = s3Buckets.find(
+          (bucketConfig: any) => bucketConfig.name == item.bucketNameReference
+        );
+        if (typeof bucket.bucketName !== "undefined") {
           item.bucketNameReference = bucket.bucketName;
         }
       }

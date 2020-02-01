@@ -1,0 +1,30 @@
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html
+name: solr
+desiredCount: 2
+imageURI: solr:7.7-slim
+listeners:
+  - type: forward
+    name: solr
+    listenerPort: 8983
+    priority: 990
+    hosts:
+    - origin.healthyplace.com
+    - pma.healthyplace.com
+createECR: true
+type: ec2
+hardMemoryLimit: 512
+softMemoryLimit: 128
+hostPort: 8983
+containerPort: 8983
+# Optional. Defaults to 443. 
+# listenerPort: 443
+cpuUnits: 128
+logRegion: us-east-1
+#Internal services need the awsvpc network driver.
+# default: bridge
+# options: none | bridge | awsvpc | host
+network: awsvpc
+# values passed directly to the container
+# Default value of "db-host" is set by rds.dbHostParamName config value.
+params:
+  SOLR_HOME: /mnt/efs/hp/solr

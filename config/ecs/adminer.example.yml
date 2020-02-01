@@ -1,0 +1,24 @@
+name: adminer
+desiredCount: 1
+imageURI: adminer
+listeners:
+  - type: forward
+    priority: 990
+    listenerPort: 10000
+    hosts:
+    - "*.example.com"
+createECR: false
+type: ec2
+hardMemoryLimit: 512
+softMemoryLimit: 128
+hostPort: 0
+containerPort: 8080
+cpuUnits: 256
+logRegion: us-east-1
+variables:
+  ADMINER_DESIGN: pepa-linha
+# values passed directly to the container
+# Default value of "db-host" is set by rds.dbHostParamName config value.
+params:
+#  ADMINER_DEFAULT_SERVER: postgres-host
+#  ADMINER_DEFAULT_SERVER: db-host

@@ -1,0 +1,4 @@
+name: baws-artifacts
+# assets | logs | artifacts
+type: artifacts
+addUniqueId: true
