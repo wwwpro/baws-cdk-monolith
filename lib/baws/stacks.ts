@@ -362,19 +362,21 @@ export class BawsStack extends Stack {
 
     // Build our targets, so we can associate the scaling groups.
     tasks.forEach((item: any) => {
-      const target = new CfnTargetGroup(
-        this,
-        `baws-target-${item.name}`,
-        Target.getTargetProps(item, { vpcId })
-      );
-      target.addDependsOn(alb);
-      targets.push(target);
-      targetMap.set(item.name, target.ref);
-      targetRefs.push(target.ref);
+
 
       // @todo support IP based targets.
       // There are no associated listeners if network type is awsvpc.
       if (typeof item.listeners !== "undefined") {
+        
+        const target = new CfnTargetGroup(
+          this,
+          `baws-target-${item.name}`,
+          Target.getTargetProps(item, { vpcId })
+        );
+        target.addDependsOn(alb);
+        targets.push(target);
+        targetMap.set(item.name, target.ref);
+        targetRefs.push(target.ref);
         // Just in case network was defined as awsvpc, but the listeners were
         // Add new listener if it's a new port we haven't created yet.
         item.listeners.forEach((listener: any) => {
