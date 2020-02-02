@@ -1,5 +1,9 @@
 import { Construct, Stack, StackProps } from "@aws-cdk/core";
-import { CfnTaskDefinition, CfnServiceProps } from "@aws-cdk/aws-ecs";
+import {
+  CfnTaskDefinition,
+  CfnServiceProps,
+  CfnService
+} from "@aws-cdk/aws-ecs";
 import {
   CfnListener,
   CfnListenerRuleProps,
@@ -8,6 +12,7 @@ import {
 
 import { CfnRole } from "@aws-cdk/aws-iam";
 import { RedirectProtocol } from "@aws-cdk/aws-s3";
+import { type } from "os";
 
 export class Services {
   targetRefs: string[] = [];
@@ -29,6 +34,16 @@ export class Services {
       cluster: props.clusterName,
       desiredCount: configItem.desiredCount
     };
+
+    if (typeof props.networkConfiguration !== "undefined") {
+      const networkConfig: CfnService.NetworkConfigurationProperty = {
+        awsvpcConfiguration: {
+          subnets: props.networkConfiguration.subnets,
+          securityGroups: props.networkConfiguration.securityGroups
+        }
+      };
+      result = { ...result, ...networkConfig };
+    }
 
     if (typeof configItem.listeners !== "undefined") {
       const containerPort = configItem.containerPort;

@@ -584,7 +584,7 @@ export class BawsStack extends Stack {
         clusterName: cluster.clusterName
       };
 
-      // awsvpc requires network security group and subnets. 
+      // awsvpc requires network security group and subnets.
       if (typeof item.network !== "undefined" && item.network == "awsvpc") {
         const serviceSecurity = new CfnSecurityGroup(
           this,
@@ -592,12 +592,14 @@ export class BawsStack extends Stack {
           Security.getGenericPrivateGroupProps(vpcId, item.hostPort)
         );
 
-        const networkConfiguration: CfnService.AwsVpcConfigurationProperty = {
-          subnets: subnetIds,
-          securityGroups: [serviceSecurity.ref]
+        const networkConfig = {
+          networkConfiguration: {
+            subnets: subnetIds,
+            securityGroups: [serviceSecurity.ref]
+          }
         };
 
-        serviceProps = {...serviceProps, ...networkConfiguration};
+        serviceProps = {...serviceProps, ...networkConfig};
       }
 
       const service = new CfnService(
