@@ -19,7 +19,25 @@ export class Security {
         cidrIp: "0.0.0.0/0"
       }]
     }
+  }
 
+  public static getSecurityGroups(vpcId:string, port:number, groupRefs:string[]):CfnSecurityGroupProps {
+    let securityGroupIngress: CfnSecurityGroup.IngressProperty[] = [];
+    groupRefs.forEach((item) => {
+      securityGroupIngress.push(
+        {
+          ipProtocol: "tcp",
+          fromPort: port,
+          toPort: port,
+          sourceSecurityGroupId: item
+        }
+      )
+    });
+    return {
+      vpcId,
+      securityGroupIngress,
+      groupDescription: 'Created for ECS awsvpc instances'
+    }
   }
 
   public static getAlbGroupProps(vpcId:string, bastionIps: string[] = []): CfnSecurityGroupProps {

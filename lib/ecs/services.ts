@@ -36,13 +36,15 @@ export class Services {
     };
 
     if (typeof props.networkConfiguration !== "undefined") {
-      const networkConfig: CfnService.NetworkConfigurationProperty = {
-        awsvpcConfiguration: {
-          subnets: props.networkConfiguration.subnets,
-          securityGroups: props.networkConfiguration.securityGroups
+      result = {
+        ...result,
+        networkConfiguration: {
+          awsvpcConfiguration: {
+            subnets: props.networkConfiguration.subnets,
+            securityGroups: props.networkConfiguration.securityGroups
+          }
         }
       };
-      result = { ...result, ...networkConfig };
     }
 
     if (typeof configItem.listeners !== "undefined") {
