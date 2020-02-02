@@ -34,7 +34,12 @@ import {
 } from "@aws-cdk/aws-elasticloadbalancingv2";
 import { Function, Code, Runtime, CfnPermission } from "@aws-cdk/aws-lambda";
 import { CfnLogGroup } from "@aws-cdk/aws-logs";
-import { CfnCluster, CfnTaskDefinition, CfnService } from "@aws-cdk/aws-ecs";
+import {
+  CfnCluster,
+  CfnTaskDefinition,
+  CfnService,
+  MountPoint
+} from "@aws-cdk/aws-ecs";
 
 import { Target } from "../ecs/targets";
 import { CfnAutoScalingGroup } from "@aws-cdk/aws-autoscaling";
@@ -43,7 +48,6 @@ import {
   CfnRepository as CfnEcrRepository,
   Repository
 } from "@aws-cdk/aws-ecr";
-import { DockerImageAsset } from "@aws-cdk/aws-ecr-assets";
 import { CfnPipeline } from "@aws-cdk/aws-codepipeline";
 import { CfnRole, CfnInstanceProfile } from "@aws-cdk/aws-iam";
 import { CfnBucket } from "@aws-cdk/aws-s3";
@@ -55,7 +59,7 @@ import {
   CfnDBInstance,
   CfnDBClusterParameterGroup
 } from "@aws-cdk/aws-rds";
-import { StringParameter, IStringParameter } from "@aws-cdk/aws-ssm";
+import { StringParameter } from "@aws-cdk/aws-ssm";
 import { CfnSecurityGroup } from "@aws-cdk/aws-ec2";
 import { CfnFileSystem, CfnMountTarget } from "@aws-cdk/aws-efs";
 import {
@@ -66,6 +70,7 @@ import {
   CfnDistribution,
   CfnCloudFrontOriginAccessIdentity
 } from "@aws-cdk/aws-cloudfront";
+import { CfnService as ServiceDiscovery } from "@aws-cdk/aws-servicediscovery";
 
 import { YamlConfig } from "./yaml-dir";
 import * as path from "path";
@@ -105,6 +110,8 @@ export class BawsStack extends Stack {
 
     let publicSubnets: CfnSubnet[] = [];
     let subnetIds: string[] = [];
+
+    let serviceDiscoveryMap: Map<string, string[]> = new Map();
 
     const bucketMap: Map<string, BucketProps> = new Map();
 
@@ -362,12 +369,9 @@ export class BawsStack extends Stack {
 
     // Build our targets, so we can associate the scaling groups.
     tasks.forEach((item: any) => {
-
-
       // @todo support IP based targets.
       // There are no associated listeners if network type is awsvpc.
       if (typeof item.listeners !== "undefined") {
-
         const target = new CfnTargetGroup(
           this,
           `baws-target-${item.name}`,
@@ -577,12 +581,35 @@ export class BawsStack extends Stack {
 
       const target = targetMap.get(item.name);
 
-
       let serviceProps = {
         targetRef: target,
         taskRef: task.ref,
         clusterName: cluster.clusterName
       };
+
+      // Add the discovery name to the namespace, if it doesn't exist.
+      // But first, check to see that we have both namespace and discovery name.
+      if (
+        typeof item.namespace !== "undefined" &&
+        typeof item.discoveryName !== "undefined"
+      ) {
+        let discoveryNames = serviceDiscoveryMap.get(item.namespace);
+        // We've already declared this name space,
+        // so check to see that we're not adding a duplicate discoveryName.
+        if (typeof discoveryNames !== "undefined") {
+          if (discoveryNames.indexOf(item.discoveryName) > -1) {
+            this.node.addError(
+              `Discovery name ${item.discoveryName} already declared. Discovery names must be unique.`
+            );
+          } else {
+            discoveryNames.push(item.discoveryName);
+            serviceDiscoveryMap.set(item.namespace, discoveryNames);
+          }
+          // We haven't added the namespace yet, so just add the incoming values.
+        } else {
+          serviceDiscoveryMap.set(item.namespace, [item.discoveryName]);
+        }
+      }
 
       // awsvpc requires network security group and subnets.
       if (typeof item.network !== "undefined" && item.network == "awsvpc") {
@@ -599,7 +626,7 @@ export class BawsStack extends Stack {
           }
         };
 
-        serviceProps = {...serviceProps, ...networkConfig};
+        serviceProps = { ...serviceProps, ...networkConfig };
       }
 
       const service = new CfnService(
@@ -617,6 +644,29 @@ export class BawsStack extends Stack {
 
       // @todo find a sane balance between manual priority handling and simple use.
       counter++;
+    });
+
+    // Create service discovery, if we have any definitions
+    serviceDiscoveryMap.forEach((value: string[], key: string) => {
+      value.forEach((discoveryName: string) => {
+        const nameSpace = new ServiceDiscovery(this, `baws-service-${key}-${discoveryName}`, {
+          name: discoveryName,
+          namespaceId: key,
+          description: "Services for baws cdk.",
+          healthCheckConfig: {
+            failureThreshold: 2,
+            type: 'tcp'
+          },
+          dnsConfig: {
+            dnsRecords: [
+              {
+                ttl: 60,
+                type: 'A',
+              }
+            ]
+          }
+        });
+      });
     });
 
     const commitReposConfig: string[] = config.commitRepo.repos;
