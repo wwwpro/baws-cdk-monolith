@@ -247,6 +247,30 @@ export class BawsStack extends Stack {
       clusterName: config.ecs.clusterName
     });
 
+    // Elastic File System
+    if (typeof this.props.efs !== "undefined" && this.props.efs === true) {
+      const efs = new CfnFileSystem(this, "baws-cfnefs", {
+        encrypted: false,
+        fileSystemTags: [
+          {
+            key: "Name",
+            value: config.efs.name
+          }
+        ]
+      });
+
+      for (let i = 0; i < publicSubnets.length; i++) {
+        const cfnfsTarget = new CfnMountTarget(this, `baws-efs-target-${i}`, {
+          subnetId: publicSubnets[i].ref,
+          fileSystemId: efs.ref,
+          securityGroups: [stackSecurity.efs.ref]
+        });
+        cfnfsTarget.addDependsOn(efs);
+        cfnfsTarget.addDependsOn(stackSecurity.efs);
+      }
+
+      efsId = efs.ref;
+    }
 
     // Prepare pipeeline variables.
     const s3Dir = YamlConfig.getDirConfigs(config.s3.configDir);
@@ -338,9 +362,12 @@ export class BawsStack extends Stack {
 
     // Build our targets, so we can associate the scaling groups.
     tasks.forEach((item: any) => {
+
+
       // @todo support IP based targets.
       // There are no associated listeners if network type is awsvpc.
       if (typeof item.listeners !== "undefined") {
+
         const target = new CfnTargetGroup(
           this,
           `baws-target-${item.name}`,
@@ -516,7 +543,6 @@ export class BawsStack extends Stack {
     }
 
     // Build out tasks, their log groups, and associated services.
-    let taskSecurityRefs: string[] = [];
     tasks.forEach((item: any) => {
       const logGroup = new CfnLogGroup(
         this,
@@ -551,7 +577,8 @@ export class BawsStack extends Stack {
 
       const target = targetMap.get(item.name);
 
-      let serviceProps: any = {
+
+      let serviceProps = {
         targetRef: target,
         taskRef: task.ref,
         clusterName: cluster.clusterName
@@ -564,15 +591,15 @@ export class BawsStack extends Stack {
           `baws-security-service-${item.name}`,
           Security.getGenericPrivateGroupProps(vpcId, item.hostPort)
         );
-        taskSecurityRefs.push(serviceSecurity.ref);
 
-        serviceProps = {
-          ...serviceProps,
+        const networkConfig = {
           networkConfiguration: {
             subnets: subnetIds,
             securityGroups: [serviceSecurity.ref]
           }
         };
+
+        serviceProps = {...serviceProps, ...networkConfig};
       }
 
       const service = new CfnService(
@@ -591,37 +618,6 @@ export class BawsStack extends Stack {
       // @todo find a sane balance between manual priority handling and simple use.
       counter++;
     });
-
-    const efsEcsGroups = new CfnSecurityGroup(
-      this,
-      `baws-efs-ecs-security`,
-      Security.getSecurityGroups(vpcId, 2049, taskSecurityRefs)
-    );
-
-    // Elastic File System
-    if (typeof this.props.efs !== "undefined" && this.props.efs === true) {
-      const efs = new CfnFileSystem(this, "baws-cfnefs", {
-        encrypted: false,
-        fileSystemTags: [
-          {
-            key: "Name",
-            value: config.efs.name
-          }
-        ]
-      });
-
-      for (let i = 0; i < publicSubnets.length; i++) {
-        const cfnfsTarget = new CfnMountTarget(this, `baws-efs-target-${i}`, {
-          subnetId: publicSubnets[i].ref,
-          fileSystemId: efs.ref,
-          securityGroups: [stackSecurity.efs.ref, efsEcsGroups.ref]
-        });
-        cfnfsTarget.addDependsOn(efs);
-        cfnfsTarget.addDependsOn(stackSecurity.efs);
-      }
-
-      efsId = efs.ref;
-    }
 
     const commitReposConfig: string[] = config.commitRepo.repos;
     const commitRepos: CfnRepository[] = [];
