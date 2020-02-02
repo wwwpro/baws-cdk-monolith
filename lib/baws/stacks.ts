@@ -655,7 +655,7 @@ export class BawsStack extends Stack {
           description: "Services for baws cdk.",
           healthCheckConfig: {
             failureThreshold: 2,
-            type: 'tcp'
+            type: 'TCP'
           },
           dnsConfig: {
             dnsRecords: [
