@@ -70,7 +70,7 @@ import {
   CfnDistribution,
   CfnCloudFrontOriginAccessIdentity
 } from "@aws-cdk/aws-cloudfront";
-import { CfnService as ServiceDiscovery } from "@aws-cdk/aws-servicediscovery";
+import { CfnService as ServiceDiscovery, CfnPrivateDnsNamespace } from "@aws-cdk/aws-servicediscovery";
 
 import { YamlConfig } from "./yaml-dir";
 import * as path from "path";
@@ -648,10 +648,14 @@ export class BawsStack extends Stack {
 
     // Create service discovery, if we have any definitions
     serviceDiscoveryMap.forEach((value: string[], key: string) => {
+      const nameSpace = new CfnPrivateDnsNamespace(this, `baws-namespace-${key}`, {
+        name: key,
+        vpc: vpcId,
+      })
       value.forEach((discoveryName: string) => {
-        const nameSpace = new ServiceDiscovery(this, `baws-service-${key}-${discoveryName}`, {
+        const discovery = new ServiceDiscovery(this, `baws-service-${key}-${discoveryName}`, {
           name: discoveryName,
-          namespaceId: key,
+          namespaceId: nameSpace.ref,
           description: "Services for baws cdk.",
           healthCheckConfig: {
             failureThreshold: 2,
@@ -666,6 +670,7 @@ export class BawsStack extends Stack {
             ]
           }
         });
+        discovery.addDependsOn(nameSpace);
       });
     });
 
