@@ -657,10 +657,6 @@ export class BawsStack extends Stack {
           name: discoveryName,
           namespaceId: nameSpace.ref,
           description: "Services for baws cdk.",
-          healthCheckConfig: {
-            failureThreshold: 2,
-            type: 'TCP'
-          },
           dnsConfig: {
             dnsRecords: [
               {
