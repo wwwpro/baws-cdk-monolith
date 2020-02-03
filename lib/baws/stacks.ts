@@ -668,9 +668,8 @@ export class BawsStack extends Stack {
 
       // Add network and namespace, which should have been created above, 
       // to the service reference. 
-      if (typeof item.network !== 'undefined' && typeof item.namespace !== 'undefined') {
-        const serviceDiscoveryNamespace = `${item.namespace}.${item.network}`;
-        const serviceDiscoveryRef = cfnServiceDiscoveryRefs.get(serviceDiscoveryNamespace);
+      if (typeof item.discoveryName !== 'undefined' && typeof item.namespace !== 'undefined') {
+        const serviceDiscoveryRef = cfnServiceDiscoveryRefs.get(`${item.discoveryName}.${item.namespace}`);
         if (typeof serviceDiscoveryRef !== 'undefined') {
           const registryArn = {
             registryArn: serviceDiscoveryRef
