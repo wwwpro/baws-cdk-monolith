@@ -603,7 +603,7 @@ export class BawsStack extends Stack {
           }
         );
         discovery.addDependsOn(nameSpace);
-        cfnServiceDiscoveryRefs.set(`${discoveryName}.${nameSpace}`, discovery.ref);
+        cfnServiceDiscoveryRefs.set(`${discoveryName}.${key}`, discovery.ref);
       });
     });
 
