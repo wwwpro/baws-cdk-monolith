@@ -45,6 +45,14 @@ export class Services {
       result = { ...result, ...networkConfig };
     }
 
+
+    if (typeof props.registryArn !== 'undefined') {
+      const registry: CfnService.ServiceRegistryProperty = {
+        registryArn: props.registryArn
+      }
+      result = {...result, ...registry};
+    }
+
     if (typeof configItem.listeners !== "undefined") {
       const containerPort = configItem.containerPort;
       const containerName = configItem.name;

@@ -70,7 +70,10 @@ import {
   CfnDistribution,
   CfnCloudFrontOriginAccessIdentity
 } from "@aws-cdk/aws-cloudfront";
-import { CfnService as ServiceDiscovery, CfnPrivateDnsNamespace } from "@aws-cdk/aws-servicediscovery";
+import {
+  CfnService as ServiceDiscovery,
+  CfnPrivateDnsNamespace
+} from "@aws-cdk/aws-servicediscovery";
 
 import { YamlConfig } from "./yaml-dir";
 import * as path from "path";
@@ -433,6 +436,30 @@ export class BawsStack extends Stack {
           }
         });
       }
+
+      // Add the discovery name to the namespace, if it doesn't exist.
+      // But first, check to see that we have both namespace and discovery name.
+      if (
+        typeof item.namespace !== "undefined" &&
+        typeof item.discoveryName !== "undefined"
+      ) {
+        let discoveryNames = serviceDiscoveryMap.get(item.namespace);
+        // We've already declared this name space,
+        // so check to see that we're not adding a duplicate discoveryName.
+        if (typeof discoveryNames !== "undefined") {
+          if (discoveryNames.indexOf(item.discoveryName) > -1) {
+            this.node.addError(
+              `Discovery name ${item.discoveryName} already declared. Discovery names must be unique.`
+            );
+          } else {
+            discoveryNames.push(item.discoveryName);
+            serviceDiscoveryMap.set(item.namespace, discoveryNames);
+          }
+          // We haven't added the namespace yet, so just add the incoming values.
+        } else {
+          serviceDiscoveryMap.set(item.namespace, [item.discoveryName]);
+        }
+      }
     });
 
     const scaling = new CfnAutoScalingGroup(
@@ -546,6 +573,40 @@ export class BawsStack extends Stack {
       });
     }
 
+    // Create service discovery, if we have any definitions
+    let cfnServiceDiscoveryRefs:Map<string, string> = new Map();
+    serviceDiscoveryMap.forEach((value: string[], key: string) => {
+      const nameSpace = new CfnPrivateDnsNamespace(
+        this,
+        `baws-namespace-${key}`,
+        {
+          name: key,
+          vpc: vpcId
+        }
+      );
+      value.forEach((discoveryName: string) => {
+        const discovery = new ServiceDiscovery(
+          this,
+          `baws-service-${key}-${discoveryName}`,
+          {
+            name: discoveryName,
+            namespaceId: nameSpace.ref,
+            description: "Services for baws cdk.",
+            dnsConfig: {
+              dnsRecords: [
+                {
+                  ttl: 60,
+                  type: "A"
+                }
+              ]
+            }
+          }
+        );
+        discovery.addDependsOn(nameSpace);
+        cfnServiceDiscoveryRefs.set(`${discoveryName}.${nameSpace}`, discovery.ref);
+      });
+    });
+
     // Build out tasks, their log groups, and associated services.
     tasks.forEach((item: any) => {
       const logGroup = new CfnLogGroup(
@@ -587,30 +648,6 @@ export class BawsStack extends Stack {
         clusterName: cluster.clusterName
       };
 
-      // Add the discovery name to the namespace, if it doesn't exist.
-      // But first, check to see that we have both namespace and discovery name.
-      if (
-        typeof item.namespace !== "undefined" &&
-        typeof item.discoveryName !== "undefined"
-      ) {
-        let discoveryNames = serviceDiscoveryMap.get(item.namespace);
-        // We've already declared this name space,
-        // so check to see that we're not adding a duplicate discoveryName.
-        if (typeof discoveryNames !== "undefined") {
-          if (discoveryNames.indexOf(item.discoveryName) > -1) {
-            this.node.addError(
-              `Discovery name ${item.discoveryName} already declared. Discovery names must be unique.`
-            );
-          } else {
-            discoveryNames.push(item.discoveryName);
-            serviceDiscoveryMap.set(item.namespace, discoveryNames);
-          }
-          // We haven't added the namespace yet, so just add the incoming values.
-        } else {
-          serviceDiscoveryMap.set(item.namespace, [item.discoveryName]);
-        }
-      }
-
       // awsvpc requires network security group and subnets.
       if (typeof item.network !== "undefined" && item.network == "awsvpc") {
         const serviceSecurity = new CfnSecurityGroup(
@@ -629,6 +666,21 @@ export class BawsStack extends Stack {
         serviceProps = { ...serviceProps, ...networkConfig };
       }
 
+      // Add network and namespace, which should have been created above, 
+      // to the service reference. 
+      if (typeof item.network !== 'undefined' && typeof item.namespace !== 'undefined') {
+        const serviceDiscoveryNamespace = `${item.namespace}.${item.network}`;
+        const serviceDiscoveryRef = cfnServiceDiscoveryRefs.get(serviceDiscoveryNamespace);
+        if (typeof serviceDiscoveryRef !== 'undefined') {
+          const registryArn = {
+            registryArn: serviceDiscoveryRef
+          };
+          serviceProps = {
+            ...serviceProps, ...registryArn}
+        }
+
+      }
+
       const service = new CfnService(
         this,
         `baws-services-${item.name}`,
@@ -644,30 +696,6 @@ export class BawsStack extends Stack {
 
       // @todo find a sane balance between manual priority handling and simple use.
       counter++;
-    });
-
-    // Create service discovery, if we have any definitions
-    serviceDiscoveryMap.forEach((value: string[], key: string) => {
-      const nameSpace = new CfnPrivateDnsNamespace(this, `baws-namespace-${key}`, {
-        name: key,
-        vpc: vpcId,
-      })
-      value.forEach((discoveryName: string) => {
-        const discovery = new ServiceDiscovery(this, `baws-service-${key}-${discoveryName}`, {
-          name: discoveryName,
-          namespaceId: nameSpace.ref,
-          description: "Services for baws cdk.",
-          dnsConfig: {
-            dnsRecords: [
-              {
-                ttl: 60,
-                type: 'A',
-              }
-            ]
-          }
-        });
-        discovery.addDependsOn(nameSpace);
-      });
     });
 
     const commitReposConfig: string[] = config.commitRepo.repos;
