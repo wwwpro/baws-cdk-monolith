@@ -673,7 +673,7 @@ export class BawsStack extends Stack {
         this.node.addInfo(`Found namespace ${item.discoveryName}`);
         const serviceDiscoveryRef = cfnServiceDiscoveryRefs.get(`${item.discoveryName}.${item.namespace}`);
         if (typeof serviceDiscoveryRef !== 'undefined') {
-          this.node.addInfo(`Adding discoveryref ${item.serviceDiscoveryRef}`);
+          this.node.addInfo(`Adding discoveryref ${serviceDiscoveryRef}`);
           const registryArn = {
             registryArn: serviceDiscoveryRef
           };
