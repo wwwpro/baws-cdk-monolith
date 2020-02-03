@@ -576,6 +576,7 @@ export class BawsStack extends Stack {
     // Create service discovery, if we have any definitions
     let cfnServiceDiscoveryRefs:Map<string, string> = new Map();
     serviceDiscoveryMap.forEach((value: string[], key: string) => {
+      this.node.addInfo(`Service ${key}`);
       const nameSpace = new CfnPrivateDnsNamespace(
         this,
         `baws-namespace-${key}`,
@@ -585,6 +586,7 @@ export class BawsStack extends Stack {
         }
       );
       value.forEach((discoveryName: string) => {
+        this.node.addInfo(`Service value ${discoveryName}`);
         const discovery = new ServiceDiscovery(
           this,
           `baws-service-${key}-${discoveryName}`,
@@ -603,6 +605,7 @@ export class BawsStack extends Stack {
           }
         );
         discovery.addDependsOn(nameSpace);
+
         cfnServiceDiscoveryRefs.set(`${discoveryName}.${key}`, discovery.ref);
       });
     });
