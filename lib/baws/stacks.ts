@@ -38,7 +38,6 @@ import {
   CfnCluster,
   CfnTaskDefinition,
   CfnService,
-  MountPoint
 } from "@aws-cdk/aws-ecs";
 
 import { Target } from "../ecs/targets";
@@ -258,7 +257,7 @@ export class BawsStack extends Stack {
     });
 
     // Elastic File System
-    if (typeof this.props.efs !== "undefined" && this.props.efs === true) {
+    if (this.props.efs) {
       const efs = new CfnFileSystem(this, "baws-cfnefs", {
         encrypted: false,
         fileSystemTags: [
@@ -476,7 +475,7 @@ export class BawsStack extends Stack {
       scaling.addDependsOn(item);
     });
 
-    if (typeof this.props.cache !== "undefined" && this.props.cache === true) {
+    if (this.props.cache) {
       const subnetIds = publicSubnets.map(x => x.ref);
       const subnetGroup = new CacheSubnetGroup(this, "baws-cache-subnet", {
         cacheSubnetGroupName: "baws-subnet",
@@ -515,7 +514,7 @@ export class BawsStack extends Stack {
       }
     }
 
-    if (typeof this.props.rds !== "undefined" && this.props.rds === true) {
+    if (this.props.rds) {
       // Build rds databases
 
       const dbSubnetGroup = new CfnDBSubnetGroup(this, "baws-db-subnet-group", {
@@ -671,8 +670,8 @@ export class BawsStack extends Stack {
         serviceProps = { ...serviceProps, ...networkConfig };
       }
 
-      // Add network and namespace, which should have been created above, 
-      // to the service reference. 
+      // Add network and namespace, which should have been created above,
+      // to the service reference.
       if (typeof item.discoveryName !== 'undefined' && typeof item.namespace !== 'undefined') {
         this.node.addInfo(`Found namespace ${item.discoveryName}`);
         const serviceDiscoveryRef = cfnServiceDiscoveryRefs.get(`${item.discoveryName}.${item.namespace}`);
@@ -887,7 +886,7 @@ export class BawsStack extends Stack {
       ecsRulePermission.addDependsOn(ecsRule);
     }
 
-    if (typeof this.props.cdn !== "undefined" && this.props.cdn == true) {
+    if (this.props.cdn) {
       config.cdn.distributions.forEach((item: any) => {
         const originAccessIdentity = new CfnCloudFrontOriginAccessIdentity(
           this,

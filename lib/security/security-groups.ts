@@ -105,19 +105,27 @@ export class Security {
   };
 
   /**
-   * 
-   * @param vpcId 
-   * @param ec2Group 
+   *
+   * @param vpcId
+   * @param ec2Group
    */
   public static getRdsGroupProps (vpcId:string, ec2Group: CfnSecurityGroup): CfnSecurityGroupProps {
     return ({
       vpcId: vpcId,
       groupDescription: "Created by baws cdk",
       securityGroupIngress: [
+          //MySQL
         {
           ipProtocol: "tcp",
           fromPort: 3306,
           toPort: 3306,
+          sourceSecurityGroupId: ec2Group.ref
+        },
+          //Postgres
+        {
+          ipProtocol: "tcp",
+          fromPort: 5432,
+          toPort: 5432,
           sourceSecurityGroupId: ec2Group.ref
         }
       ]
