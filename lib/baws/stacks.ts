@@ -631,6 +631,10 @@ export class BawsStack extends Stack {
         ecrMap.set(item.name, uri.repositoryUri);
       }
 
+      if (typeof item) {
+
+      }
+
       const task = new CfnTaskDefinition(
         this,
         `baws-task-${item.name}`,
